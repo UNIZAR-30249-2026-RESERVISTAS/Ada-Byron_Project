@@ -1,0 +1,17 @@
+services:
+  postgis:
+    image: 'kartoza/postgis:14'
+    labels:
+      org.springframework.boot.service-connection: postgres
+    ports:
+      - "25432:5432"
+    environment:
+      - 'POSTGRES_USER=proyecto'
+      - 'POSTGRES_PASSWORD=proyectovm'
+      - 'POSTGRES_DB=proyectodb'
+      - 'DEFAULT_ENCODING=UTF8'
+    volumes:
+      - 'dbdata:/var/lib/postgresql/data'
+volumes:
+  dbdata:
+    external: true
