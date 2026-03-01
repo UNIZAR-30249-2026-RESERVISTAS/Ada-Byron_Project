@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Map } from 'lucide-react';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +28,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <header className="h-[56px] flex items-center justify-between px-6" style={{ backgroundColor: '#1B2A4A' }}>
+          <div className="flex items-center gap-2.5">
+            <Map className="size-5 text-white/80" />
+            <span className="font-serif-display text-white" style={{ fontSize: '18px' }}>
+              Ada Byron · Espacios
+            </span>
+          </div>
+        </header>
+        
+        <main className="flex-1 relative overflow-hidden">
+          {children}
+        </main>
       </body>
     </html>
   );
