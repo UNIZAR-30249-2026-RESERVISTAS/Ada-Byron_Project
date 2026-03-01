@@ -1,0 +1,4 @@
+package com.adabyron.domain.persona;
+
+public class Persona {
+}
