@@ -16,7 +16,7 @@ services:
       - 'POSTGRES_DB=proyectodb'
       - 'DEFAULT_ENCODING=UTF8'
     volumes:
-      - 'dbdata:/var/lib/postgresql/data'
+      - 'dbdata:/var/lib/postgresql'
   pygeoapi:
     image: 'geopython/pygeoapi:latest'
     ports:
@@ -26,7 +26,7 @@ services:
     volumes:
       - './pygeoapi-config-act.yml:/pygeoapi/local.config.yml'
     depends_on:
-      - 'postgis'
+      postgis:
+        condition: service_healthy
 volumes:
   dbdata:
-    external: true
