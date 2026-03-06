@@ -28,7 +28,7 @@ export default function PaginaPrincipal() {
     { key: 'seminario', label: 'Seminario', color: { color: 'green', weight: 2, fillColor: 'lightgreen', fillOpacity: 0.8 } },
     { key: 'laboratorio', label: 'Laboratorio', color: { color: 'orange', weight: 2, fillColor: '#FFCC80', fillOpacity: 0.8 } },
     { key: 'despacho', label: 'Despacho', color: { color: 'purple', weight: 2, fillColor: '#E1BEE7', fillOpacity: 0.8 } },
-    { key: 'sala-comun', label: 'Sala Común', color: { color: 'red', weight: 1, fillColor: '#FFB3B3', fillOpacity: 0.8 } },
+    { key: 'sala común', label: 'Sala Común', color: { color: 'red', weight: 1, fillColor: '#ef5757', fillOpacity: 0.8 } },
   ];
 
 

@@ -13,8 +13,8 @@ export default function MapaProxy({ data, floorId }: { data: any, floorId: strin
       return { color: 'blue', weight: 2, fillColor: 'lightblue', fillOpacity: 0.6 };
     } else if (tipo === 'SEMINARIO') {
       return { color: 'green', weight: 2, fillColor: 'lightgreen', fillOpacity: 0.6 };
-    } else if (tipo === 'SALA COMUN'){
-      return { color: 'red', weight: 1, fillColor: '#FFB3B3', fillOpacity: 0.6 };
+    } else if (tipo === 'SALA COMÚN'){
+      return { color: 'red', weight: 1, fillColor: '#ef5757', fillOpacity: 0.6 };
     } else {
       return { color: '#CCCCCC', weight: 1, fillColor: '#FFFFFF', fillOpacity: 0.3 }
     }
