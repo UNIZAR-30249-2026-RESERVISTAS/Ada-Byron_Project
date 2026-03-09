@@ -19,6 +19,6 @@ public record DepartamentoId(int valor) {
 
     @Override
     public String toString() {
-        return toString().valueOf(valor); // Devolvemos el valor como un string para facilitar su uso en la UI y en los logs.
+        return String.valueOf(valor); // Devolvemos el valor como un string para facilitar su uso en la UI y en los logs.
     }
 }

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module version="4">
+  <component name="OpenBpmProjectModulesStateV2">
+    <option name="hasState" value="true" />
+    <option name="moduleState">
+      <JmixModuleStateV2>
+        <option name="artifactGroup" value="com.ejemplo" />
+        <option name="artifactVersion" value="0.0.1-SNAPSHOT" />
+        <option name="buildFilePath" value="D:\4UNI\2Cuatri\Lab.IngSoftware\Ada-Byron_Project\backend\build.gradle.kts" />
+        <option name="buildScriptDependencies">
+          <Dependency configuration="classpath" group="org.springframework.boot" name="org.springframework.boot.gradle.plugin" version="4.0.2" />
+          <Dependency configuration="classpath" group="io.spring.dependency-management" name="io.spring.dependency-management.gradle.plugin" version="1.1.7" />
+        </option>
+        <option name="buildSystemName" value="Gradle" />
+        <option name="classesDir" value="D:\4UNI\2Cuatri\Lab.IngSoftware\Ada-Byron_Project\backend\build\classes\java\main" />
+        <option name="dependencies">
+          <Dependency configuration="implementation" group="org.springframework.boot" name="spring-boot-starter-data-jpa" />
+          <Dependency configuration="implementation" group="org.springframework.boot" name="spring-boot-starter-validation" />
+          <Dependency configuration="implementation" group="org.springframework.boot" name="spring-boot-starter-webmvc" />
+          <Dependency configuration="compileOnly" group="org.projectlombok" name="lombok" />
+          <Dependency configuration="runtimeOnly" group="org.postgresql" name="postgresql" />
+          <Dependency configuration="testImplementation" group="org.springframework.boot" name="spring-boot-starter-data-jpa-test" />
+          <Dependency configuration="testImplementation" group="org.springframework.boot" name="spring-boot-starter-validation-test" />
+          <Dependency configuration="testImplementation" group="org.springframework.boot" name="spring-boot-starter-webmvc-test" />
+          <Dependency configuration="testRuntimeOnly" group="org.junit.platform" name="junit-platform-launcher" />
+        </option>
+        <option name="jarFile" value="D:\4UNI\2Cuatri\Lab.IngSoftware\Ada-Byron_Project\backend\build\libs\backend-0.0.1-SNAPSHOT-plain.jar" />
+        <option name="mavenLocal" value="true" />
+        <option name="mavenLocalURI" value="file:/$MAVEN_REPOSITORY$/" />
+        <option name="moduleName" value="backend" />
+        <option name="rootBuildFilePath" value="D:\4UNI\2Cuatri\Lab.IngSoftware\Ada-Byron_Project\backend\build.gradle.kts" />
+        <option name="rootProjectName" value="backend" />
+        <option name="stateBuildScriptRepositories">
+          <Repository url="https://plugins.gradle.org/m2" />
+        </option>
+        <option name="stateRepositories">
+          <Repository url="https://repo.maven.apache.org/maven2/" />
+        </option>
+      </JmixModuleStateV2>
+    </option>
+  </component>
+</module>

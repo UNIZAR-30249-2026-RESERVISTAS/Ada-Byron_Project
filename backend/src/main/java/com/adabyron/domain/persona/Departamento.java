@@ -32,6 +32,17 @@ public class Departamento {
     public String getNombre() { return nombre; }
     public String getCodigoSIGEUZ() { return codigoSIGEUZ; }
 
+    /**
+     * Las entidades se comparan por su identidad (ID), no por su valor. 
+     * Por eso, el método equals solo compara los IDs de los departamentos, no sus nombres o códigos.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Departamento d)) return false;
+        return this.id.equals(d.id);
+    } 
+
     @Override
     public String toString() { return nombre; }
 

@@ -18,19 +18,21 @@ public interface PersonaRepository extends JpaRepository<Persona, PersonaId> {
     // No es necesario implementar este método, el JpaRepository ya lo implementa.
     // Eso si, debo de declararlo para que el adaptador de infraestructura lo pueda usar, ya que el JpaRepository no lo expone.
     //Optional<Persona> findByEmail(Email email);
-    void findByEmail(Email email);
-    void findById(Persona id);
-
-    // Para la UI de gestión de personas (será gestionado por el admin) En principio no es necesario
-    // Ya lo implementa el JpaRepository.
-    List<Persona> findAll();
+    void findByEmail(String email);
 
     List<Persona> findByRol(Rol rol);
 
     List<Persona> findByDepartamento(DepartamentoId departamentoId);
 
-    boolean existsByEmail(Email email);
+    boolean existsByEmail(String email);
 
+    
+    // En principio no es necesario implementar este método, el JpaRepository ya lo implementa. 
+    //void findById(Persona id);
+
+    // Para la UI de gestión de personas (será gestionado por el admin) En principio no es necesario
+    // Ya lo implementa el JpaRepository.
+    //List<Persona> findAll();
 
     // No es necesario implementar estos métodos, el JpaRepository ya los implementa.
     //void save(Persona persona);
