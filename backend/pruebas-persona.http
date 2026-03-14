@@ -1,0 +1,74 @@
+### Archivo de pruebas para la entidad Persona.
+
+### Variables para las pruebas
+@baseUrl = http://localhost:8080/api/personas
+@contentType = application/json
+
+### 1. Crear una persona (ESTUDIANTE)
+# @name crearEstudiante
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+    "nombre": "Ana García",
+    "email": "ana.garcia@example.com",
+    "rol": "ESTUDIANTE",
+    "departamentoId": null
+}
+
+### Guardar ID respuesta para siguientes peticiones (si tu cliente REST lo soporta, sino copiar a mano)
+@idEstudiante = {{crearEstudiante.response.body.id}}
+
+
+### 2. Crear una persona que requiere departamento (DOCENTE)
+# @name crearDocente
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+    "nombre": "Dr. House",
+    "email": "house@hospital.com",
+    "rol": "DOCENTE_INVESTIGADOR",
+    "departamentoId": 1
+}
+
+### 3. Error: Email inválido
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+    "nombre": "Error Man",
+    "email": "email-malo",
+    "rol": "ESTUDIANTE"
+}
+
+### 4. Listar todas las personas
+GET {{baseUrl}}
+
+### 5. Buscar por ID (reemplazar con un UUID real de la respuesta 1)
+GET {{baseUrl}}/{{idEstudiante}}
+
+### 6. Buscar por Email
+GET {{baseUrl}}/email/house@hospital.com
+
+### 7. Cambiar Rol de Estudiante a Conserje
+PUT {{baseUrl}}/{{idEstudiante}}/rol
+Content-Type: {{contentType}}
+
+{
+    "rol": "CONSERJE",
+    "departamentoId": null
+}
+
+### 8. Asignar Gerente (Solo funciona si es Docente Investigador)
+@idDocente = {{crearDocente.response.body.id}}
+PUT {{baseUrl}}/{{idDocente}}/gerente
+
+### 9. Quitar Gerente
+DELETE {{baseUrl}}/{{idDocente}}/gerente
+
+### 10. Eliminar Persona
+DELETE {{baseUrl}}/{{idEstudiante}}
+
+### 11. Eliminar Persona que es Docente Investigador
+DELETE {{baseUrl}}/{{idDocente}}

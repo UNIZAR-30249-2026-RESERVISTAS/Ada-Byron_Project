@@ -1,40 +1,30 @@
 package com.adabyron.domain.persona;
 
-import java.util.Optional;
 import java.util.List;
-import org.springframework.data.jpa.repository.JpaRepository;
-
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Puerto de Salida - interfaz que el dominio expone para que el adaptador
  * de infraestructura pueda implementar.
- *
  */
-public interface PersonaRepository extends JpaRepository<Persona, PersonaId> {
+public interface PersonaRepository {
 
-    // Optional<Persona> findById(PersonaId id);
+    Persona save(Persona persona);
 
-    // REQ-B7 - El sistema debe permitir loguearse a un usuario
-    // No es necesario implementar este método, el JpaRepository ya lo implementa.
-    // Eso si, debo de declararlo para que el adaptador de infraestructura lo pueda usar, ya que el JpaRepository no lo expone.
-    //Optional<Persona> findByEmail(Email email);
-    void findByEmail(String email);
+    Optional<Persona> findById(UUID id);
+
+    Optional<Persona> findByEmail(String email);
+
+    List<Persona> findAll();
 
     List<Persona> findByRol(Rol rol);
 
-    List<Persona> findByDepartamento(DepartamentoId departamentoId);
+    List<Persona> findByDepartamentoId(Integer departamentoId);
 
     boolean existsByEmail(String email);
 
-    
-    // En principio no es necesario implementar este método, el JpaRepository ya lo implementa. 
-    //void findById(Persona id);
+    boolean existsById(UUID id);
 
-    // Para la UI de gestión de personas (será gestionado por el admin) En principio no es necesario
-    // Ya lo implementa el JpaRepository.
-    //List<Persona> findAll();
-
-    // No es necesario implementar estos métodos, el JpaRepository ya los implementa.
-    //void save(Persona persona);
-    //void saveAll(List<Persona> personas);
+    void deleteById(UUID id);
 }

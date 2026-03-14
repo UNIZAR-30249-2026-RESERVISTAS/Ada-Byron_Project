@@ -1,10 +1,8 @@
 package com.adabyron.domain.persona;
 
 import com.adabyron.domain.persona.exception.*;
-import com.adabyron.domain.shared.AggregateRoot;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * AGGREGATE ROOT - Persona
@@ -18,45 +16,25 @@ import java.util.Set;
  *  INV-5: email nunca es nulo ni vacío.
  *  INV-6: nombre nunca es nulo ni vacío.
  */
-public class Persona extends AggregateRoot {
-    // ID de la persona, generado automáticamente al crear una nueva persona.
-    private final PersonaId id;
+public class Persona{
 
-    // Datos de una persona, serán String con validación inline en el constructor.
+    private UUID id;
     private  String nombre; // INV-6
     private  String email; // INV-5
-
-    // Roles y adscripción del departamento
     private Set<Rol> roles; // INV-1, INV-2
-    private DepartamentoId departamentoId; // INV-3, INV-4
+    private Integer departamentoId; // INV-3, INV-4
 
-    private Persona(PersonaId id, String nombre, String email) {
-        this.id = id;
+    // Constructor sin argumentos requerido por JPA
+    protected Persona() {}
+
+    public Persona(PersonaId id, String nombre, String email, Set<Rol> roles, DepartamentoId departamentoId) {
+        this.id = Objects.requireNonNull(id, "El id no puede ser nulo").valor();
         this.nombre = validarNombre(nombre);
         this.email = validarEmail(email);
-        this.roles = new HashSet<>();
-    }
-    /**
-     * Método de fábrica para crear una nueva persona.
-     * Este método se encarga de validar los datos de entrada, asignar un ID único
-     * y garantizar que se asigna al menos un rol y un departamento al crear la persona, ya que son requisitos obligatorios.
-     */
-    public static Persona crearNuevaPersona(String nombre, String email, Rol rol, DepartamentoId departamentoId) {
-        Persona p = new Persona(PersonaId.generarNuevoId(), nombre, email);
-        p.roles.add(rol); // Asignamos el rol al crear la persona, ya que es obligatorio tener al menos un rol.
-        p.validarRolDepartamento(rol, departamentoId); // Validamos que el rol sea compatible con el departamento.
-        p.departamentoId = departamentoId; // Asignamos el departamento al crear la persona, ya que es obligatorio tener un departamento.
-        return p;
-    }
+        this.roles = new HashSet<>(Objects.requireNonNull(roles, "Los roles no pueden ser nulos"));
 
-    /**
-     * Método de fábrica para reconstruir una persona a partir de sus datos almacenados en la base de datos.
-     */
-    public static Persona reconstruirPersona(PersonaId id, String nombre, String email, Set<Rol> roles, DepartamentoId departamentoId) {
-        Persona p = new Persona(id, nombre, email);
-        p.roles =new HashSet<>(roles); // Asignamos los roles al reconstruir la persona, ya que es obligatorio tener al menos un rol.
-        p.departamentoId = departamentoId;
-        return p;
+        validarEstadoInicial(this.roles, departamentoId);
+        this.departamentoId = departamentoId != null ? departamentoId.valor() : null;
     }
 
     // Métodos para gestionar los roles de la persona, garantizando las invariantes INV-1 e INV-2
@@ -80,9 +58,7 @@ public class Persona extends AggregateRoot {
 
         roles.remove(rolAnterior);
         roles.add(nuevoRol);
-        this.departamentoId = nuevoDepartamento;
-
-        // registerEvent(new RolCambiado(this.id, rolAnterior, nuevoRol));
+        this.departamentoId = nuevoDepartamento != null ? nuevoDepartamento.valor() : null;
     }
 
     /**
@@ -94,14 +70,12 @@ public class Persona extends AggregateRoot {
         if (tieneRol(Rol.GERENTE))
             return; // idempotente
         roles.add(Rol.GERENTE);
-        //registerEvent(new GerenciaAsignada(this.id));
     }
 
     public void quitarRolGerente() {
         if (!tieneRol(Rol.GERENTE))
             return; // idempotente
         roles.remove(Rol.GERENTE);
-        // registerEvent(new GerenciaRetirada(this.id));
     }
 
     // Métodos auxiliares para gestionar los roles
@@ -125,11 +99,30 @@ public class Persona extends AggregateRoot {
     // Métodos para validaciones inline de los datos de la persona
     // **************************
 
-    /**
-     * Método encargado de validar el nombre de la persona. INV-6
-     * El nombre no puede estar vacío, ni ser nulo, ni tener menos de 2 caracteres, ni más de 100 caracteres.
-     */
-    public String validarNombre(String nombre) {
+    private void validarEstadoInicial(Set<Rol> roles, DepartamentoId departamentoId) {
+        if (roles.isEmpty()) {
+            throw new IllegalArgumentException("La persona debe tener al menos un rol");
+        }
+        if (roles.size() > 2) {
+            throw new IllegalArgumentException("La persona no puede tener más de 2 roles");
+        }
+        if (roles.size() == 1 && roles.contains(Rol.GERENTE)) {
+            throw new RolIncompatibleException(Rol.GERENTE, Rol.GERENTE);
+        }
+        if (roles.size() == 2 &&
+            !(roles.contains(Rol.GERENTE) && roles.contains(Rol.DOCENTE_INVESTIGADOR))) {
+            throw new IllegalArgumentException("La única combinación válida de 2 roles es GERENTE + DOCENTE_INVESTIGADOR");
+        }
+
+        Rol rolPrincipal = roles.stream()
+                .filter(r -> r != Rol.GERENTE)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Debe existir un rol principal distinto de GERENTE"));
+
+        validarRolDepartamento(rolPrincipal, departamentoId);
+    }
+
+    private static String validarNombre(String nombre) {
         if (nombre == null || nombre.isBlank())
             throw new IllegalArgumentException("El nombre no puede estar vacío");
         String trimmed = nombre.strip();
@@ -140,12 +133,7 @@ public class Persona extends AggregateRoot {
         return trimmed;
     }
 
-    /**
-     * Método encargado de validar el email de la persona. INV-5
-     * El email no puede estar vacío, ni ser nulo, ni tener menos de 5 caracteres,
-     * ni más de 100 caracteres, y debe tener un formato válido.
-     */
-    public String validarEmail(String email) {
+    private static String validarEmail(String email) {
         if (email == null || email.isBlank())
             throw new IllegalArgumentException("El email no puede estar vacío");
         String trimmed = email.strip();
@@ -159,20 +147,24 @@ public class Persona extends AggregateRoot {
         return normalizado;
     }
 
-    /**
-     * Método encargado de validar que el rol asignado a la persona sea compatible con el departamento asignado.
-     * INV-3 e INV-4
-     */
-    public void validarRolDepartamento(Rol rol, DepartamentoId departamento) {
+    private static void validarRolDepartamento(Rol rol, DepartamentoId departamento) {
         if (rol.requiereDepartamento() && departamento == null)
-                throw new DepartamentoRequeridoException(rol); // Por implementar la excepción
+                throw new DepartamentoRequeridoException(rol);
         if (!rol.requiereDepartamento() && departamento != null)
-                throw new DepartamentoNoPermitidoException(rol); // Por implementar la excepción
+                throw new DepartamentoNoPermitidoException(rol);
     }
 
     // **************************
-    // Getters y setters necesarios para la persistencia y la gestión de personas
+    // Getters
     // **************************
 
-    // De momento vacío para no poner sentido
+    public UUID getId() { return id; }
+    public PersonaId getPersonaId() { return new PersonaId(id); }
+    public String getNombre() { return nombre; }
+    public String getEmail() { return email; }
+    public Set<Rol> getRoles() { return Collections.unmodifiableSet(roles); }
+
+    public DepartamentoId getDepartamentoId() {
+        return departamentoId != null ? new DepartamentoId(departamentoId) : null;
+    }
 }
