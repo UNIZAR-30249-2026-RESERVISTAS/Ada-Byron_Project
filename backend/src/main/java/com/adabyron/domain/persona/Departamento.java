@@ -1,5 +1,6 @@
 package com.adabyron.domain.persona;
 
+import java.util.List;
 
 /** Entidad - Departamento Universitario (REQ-B3)
  *
@@ -27,6 +28,16 @@ public class Departamento {
 
     public static final Departamento INGENIERIA_ELECTRONICA_COMUNICACIONES = new Departamento(DepartamentoId.INGENIERIA_ELECTRONICA_COMUNICACIONES, "Ingeniería Electrónica y Comunicaciones", "IEC");
 
+    private static final List<Departamento> TODOS = List.of(INFORMATICA_INGENIERIA_SISTEMAS, INGENIERIA_ELECTRONICA_COMUNICACIONES);
+
+    public static List<Departamento> values() { return TODOS; }
+
+    public static Departamento fromId(DepartamentoId id) {
+        return TODOS.stream()
+                .filter(d -> d.id.equals(id))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("DepartamentoId inválido: " + id));
+    }
 
     public DepartamentoId getId() { return id;}
     public String getNombre() { return nombre; }
