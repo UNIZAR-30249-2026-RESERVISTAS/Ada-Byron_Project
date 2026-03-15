@@ -72,3 +72,21 @@ DELETE {{baseUrl}}/{{idEstudiante}}
 
 ### 11. Eliminar Persona que es Docente Investigador
 DELETE {{baseUrl}}/{{idDocente}}
+
+### ====================================
+### Pruebas para Departamentos
+### ====================================
+
+@departamentosUrl = http://localhost:8080/api/departamentos
+
+### 12. Listar todos los departamentos
+GET {{departamentosUrl}}
+
+### 13. Buscar departamento por ID (Informática e Ingeniería de Sistemas)
+GET {{departamentosUrl}}/1
+
+### 14. Buscar departamento por ID (Ingeniería Electrónica y Comunicaciones)
+GET {{departamentosUrl}}/2
+
+### 15. Error: Departamento con ID inválido
+GET {{departamentosUrl}}/3
