@@ -1,7 +1,5 @@
 package com.adabyron.domain.espacio;
 
-import jakarta.validation.constraints.NotNull;
-
 public record CategoriaId(int valor) {
 
     public static final CategoriaId AULA = new CategoriaId(1);

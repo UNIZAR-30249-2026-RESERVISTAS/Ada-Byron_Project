@@ -1,5 +1,7 @@
 package com.adabyron.infraestructure.web;
 
+import com.adabyron.application.espacio.CambiarCategoriaDTO;
+import com.adabyron.application.espacio.CambiarReservableDTO;
 import com.adabyron.application.espacio.EspacioDTO;
 import com.adabyron.application.espacio.EspacioService;
 import com.adabyron.domain.espacio.Categoria;
@@ -21,12 +23,12 @@ public class EspacioController {
     }
 
     @PutMapping("/{id}/categoria")
-    public EspacioDTO cambiarCategoria(@PathVariable String id, @RequestBody EspacioDTO dto){
+    public EspacioDTO cambiarCategoria(@PathVariable String id, @RequestBody CambiarCategoriaDTO dto){
         return EspacioDTO.fromEntity(espacioService.cambiarCategoria(id, Categoria.desdeNombre(dto.categoria())));
     }
 
     @PutMapping("/{id}/reservable")
-    public EspacioDTO cambiarEstado(@PathVariable String id, @RequestBody EspacioDTO dto){
+    public EspacioDTO cambiarEstado(@PathVariable String id, @RequestBody CambiarReservableDTO dto){
         return EspacioDTO.fromEntity(espacioService.cambiarReservable(id, dto.reservable()));
     }
 
