@@ -30,14 +30,10 @@ export default function MapaProxy({ data, floorId }: { data: any, floorId: strin
           style={getStyle}
           onEachFeature={(feature, layer) => {
 
-            // 1. Inicializamos un popup básico de carga
             layer.bindPopup('<div style="padding: 10px;">Cargando información... ⏳</div>');
 
-            // 2. Escuchamos el evento 'click' sobre este polígono específico
             layer.on('click', async () => {
 
-              // ¡OJO AQUÍ! Asegúrate de que este nombre coincida con la columna 
-              // que creaste en PostGIS (ej. espacio_id)
               const idDominio = feature.properties.espacio_id;
 
               if (!idDominio) {
@@ -46,7 +42,6 @@ export default function MapaProxy({ data, floorId }: { data: any, floorId: strin
               }
 
               try {
-                // 3. Llamamos a tu Backend (Spring Boot)
                 const response = await fetch(`http://localhost:8081/api/espacios/${idDominio}`);
 
                 if (!response.ok) {
@@ -54,9 +49,6 @@ export default function MapaProxy({ data, floorId }: { data: any, floorId: strin
                 }
 
                 const datos = await response.json();
-
-                // 4. Construimos el HTML bonito con los datos del backend
-                // ... dentro de tu capa.on('popupopen') ...
 
                 const contenidoHTML = `
                 <div style="font-family: 'DM Sans', sans-serif; min-width: 160px; padding: 5px;">
@@ -75,7 +67,6 @@ export default function MapaProxy({ data, floorId }: { data: any, floorId: strin
                 </div>
                 `;
 
-                // 5. Inyectamos el resultado en el popup que ya está abierto
                 layer.setPopupContent(contenidoHTML);
 
               } catch (error) {
