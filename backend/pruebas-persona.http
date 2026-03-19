@@ -1,7 +1,7 @@
 ### Archivo de pruebas para la entidad Persona.
 
 ### Variables para las pruebas
-@baseUrl = http://localhost:8080/api/personas
+@baseUrl = http://localhost:8081/api/personas
 @contentType = application/json
 
 ### 1. Crear una persona (ESTUDIANTE)
@@ -81,7 +81,7 @@ DELETE {{baseUrl}}/{{idDocente}}
 ### Pruebas para Departamentos
 ### ====================================
 
-@departamentosUrl = http://localhost:8080/api/departamentos
+@departamentosUrl = http://localhost:8081/api/departamentos
 
 ### 12. Listar todos los departamentos
 GET {{departamentosUrl}}
