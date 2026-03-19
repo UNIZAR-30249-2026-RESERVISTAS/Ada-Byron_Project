@@ -1,6 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { LogOut, User } from 'lucide-react';
+import { getCurrentUser, logoutUser, checkSession } from '../src/services/auth';
+
 
 // Importamos el mapa indicando que NO se renderice en el servidor (ssr: false)
 const MapWithNoSSR = dynamic(() => import('./MapaProxy'), {
@@ -9,9 +13,20 @@ const MapWithNoSSR = dynamic(() => import('./MapaProxy'), {
 });
 
 export default function PaginaPrincipal() {
+  const router = useRouter();
   const [selectedFloor, setSelectedFloor] = useState('planta0');
   const [geoData, setGeoData] = useState(null);
   const [filterCategory, setFilterCategory] = useState('');
+  const [ isLoggingOut, setIsLoggingOut ] = useState(false);
+
+  const user = getCurrentUser();
+
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await logoutUser();
+    router.push('/login');
+  }
 
   const currentFloor = selectedFloor.startsWith('planta')
     ? parseInt(selectedFloor.replace('planta', ''))
@@ -69,6 +84,46 @@ export default function PaginaPrincipal() {
           width: '260px',
         }}
       >
+        <div
+          className="flex items-center justify-between px-4 py-3"
+          style={{ borderBottom: '1px solid #D4CFC6' }}
+        >
+          <div className="flex items-center gap-2 overflow-hidden">
+            <div
+              className="size-7 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: '#1B2A4A' }}
+            >
+              <User className="size-3.5" style={{ color: 'rgba(255,255,255,0.85)' }} />
+            </div>
+            <div className="overflow-hidden">
+              <p
+                className="truncate"
+                style={{ fontSize: '12px', color: '#1B2A4A', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}
+              >
+                {user?.nombre ?? 'Usuario'}
+              </p>
+              <p
+                className="truncate"
+                style={{ fontSize: '10px', color: '#8A8F9E', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                {user?.email ?? ''}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            title="Cerrar sesión"
+            className="flex-shrink-0 p-1.5 rounded-lg transition-colors"
+            style={{ color: '#8A8F9E' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#C0392B')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#8A8F9E')}
+          >
+            <LogOut className="size-4" />
+          </button>
+        </div>
+
         <div className="pt-4 pl-2" style={{ borderTop: '1px solid #D4CFC6' }}>
           <span
             className="block mb-2.5"

@@ -45,24 +45,25 @@ class PersonaControllerTest {
     private UUID estudianteId;
     private UUID docenteId;
 
+    // Password hash de prueba (hash BCrypt de "password123")
+    private static final String TEST_PASSWORD_HASH = "$2a$10$N9qo8uLOickgx2ZMRZoMy.MqrqKj3fB9lVBrPfIEBGDrY1f2QmQoK";
+
     @BeforeEach
     void setUp() {
-        // En tu diseño actual, el id se auto-genera dentro de PersonaFactory. No lo controlamos
-        // desde fuera en el test, pero podemos simular sus retornos.
         personaEstudiante = PersonaFactory.crearNuevaPersona(
-                "Ana García", "ana.garcia@example.com", Rol.ESTUDIANTE, null
+                "Ana García", "ana.garcia@example.com", TEST_PASSWORD_HASH, Rol.ESTUDIANTE, null
         );
         estudianteId = personaEstudiante.getId();
 
         personaDocente = PersonaFactory.crearNuevaPersona(
-                "Dr. House", "house@hospital.com", Rol.DOCENTE_INVESTIGADOR, new DepartamentoId(1)
+                "Dr. House", "house@hospital.com", TEST_PASSWORD_HASH, Rol.DOCENTE_INVESTIGADOR, new DepartamentoId(1)
         );
         docenteId = personaDocente.getId();
     }
 
     @Test
     void crearPersona_Retorna201yDatos_CuandoEsValida() throws Exception {
-        CrearPersonaDTO dto = new CrearPersonaDTO("Ana García", "ana.garcia@example.com", "ESTUDIANTE", null);
+        CrearPersonaDTO dto = new CrearPersonaDTO("Ana García", "ana.garcia@example.com", "password123", "ESTUDIANTE", null);
         when(personaService.crearPersona(any(CrearPersonaDTO.class))).thenReturn(personaEstudiante);
 
         mockMvc.perform(post("/api/personas")
@@ -105,8 +106,8 @@ class PersonaControllerTest {
     @Test
     void cambiarRol_Retorna200_SiSeCambiaOK() throws Exception {
         CambiarRolDTO dto = new CambiarRolDTO("CONSERJE", null);
-        Persona personaActualizada = PersonaFactory.crearNuevaPersona("Ana García", "ana.garcia@example.com", Rol.CONSERJE, null);
-        
+        Persona personaActualizada = PersonaFactory.crearNuevaPersona("Ana García", "ana.garcia@example.com", TEST_PASSWORD_HASH, Rol.CONSERJE, null);
+
         when(personaService.cambiarRol(eq(estudianteId), any(CambiarRolDTO.class))).thenReturn(personaActualizada);
 
         mockMvc.perform(put("/api/personas/" + estudianteId + "/rol")
@@ -118,9 +119,7 @@ class PersonaControllerTest {
 
     @Test
     void añadirGerente_Retorna200_CuandoEsPosible() throws Exception {
-        // En la lógica de negocio real el gerente se añade a roles. Lo simulamos creando una instancia
-        // que ya lo tenga para que fromEntity lo transforme correctamente.
-        personaDocente.añadirRolGerente(); 
+        personaDocente.añadirRolGerente();
         when(personaService.añadirRolGerente(docenteId)).thenReturn(personaDocente);
 
         mockMvc.perform(put("/api/personas/" + docenteId + "/gerente"))
@@ -133,7 +132,7 @@ class PersonaControllerTest {
 
         mockMvc.perform(delete("/api/personas/" + estudianteId))
                 .andExpect(status().isNoContent());
-        
+
         verify(personaService, times(1)).eliminar(estudianteId);
     }
 }
