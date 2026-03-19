@@ -3,6 +3,7 @@ package com.adabyron.application.persona;
 import com.adabyron.domain.persona.*;
 import com.adabyron.domain.persona.exception.PersonaNotFoundException;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,20 +18,26 @@ import java.util.UUID;
 public class PersonaService {
 
     private final PersonaRepository personaRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public PersonaService(PersonaRepository personaRepository) {
+    public PersonaService(PersonaRepository personaRepository, PasswordEncoder passwordEncoder) {
         this.personaRepository = personaRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Persona crearPersona(CrearPersonaDTO dto) {
         if (personaRepository.existsByEmail(dto.email())) {
             throw new IllegalArgumentException("Ya existe una persona con el email: " + dto.email());
         }
+        if (dto.password() == null || dto.password().isBlank()) {
+            throw new IllegalArgumentException("La contraseña es obligatoria");
+        }
         Rol rol = Rol.valueOf(dto.rol());
         DepartamentoId deptId = dto.departamentoId() != null
                 ? new DepartamentoId(dto.departamentoId())
                 : null;
-        Persona persona = PersonaFactory.crearNuevaPersona(dto.nombre(), dto.email(), rol, deptId);
+        String passwordHash = passwordEncoder.encode(dto.password());
+        Persona persona = PersonaFactory.crearNuevaPersona(dto.nombre(), dto.email(), passwordHash, rol, deptId);
         return personaRepository.save(persona);
     }
 

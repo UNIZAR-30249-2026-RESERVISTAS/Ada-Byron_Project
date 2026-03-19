@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/*
+ * Implementación de PersonaRepository usando JPA
+*/
 @Repository
 public class PersonaRepositoryJpa implements PersonaRepository {
 
@@ -74,27 +77,29 @@ public class PersonaRepositoryJpa implements PersonaRepository {
         jpa.deleteById(id);
     }
 
-    // Mappers
+    // Mapper para convertir entre Persona y PersonaJpaEntity
     private PersonaJpaEntity toEntity(Persona persona) {
         return new PersonaJpaEntity(
             persona.getId(),
             persona.getNombre(),
             persona.getEmail(),
+            persona.getPasswordHash(),
             persona.getRoles(),
-            persona.getDepartamentoId() != null 
-                ? persona.getDepartamentoId().valor() 
+            persona.getDepartamentoId() != null
+                ? persona.getDepartamentoId().valor()
                 : null
         );
     }
-
+    // Mapper para convertir de PersonaJpaEntity a Persona
     private Persona toDomain(PersonaJpaEntity entity) {
         return new Persona(
             new PersonaId(entity.getId()),
             entity.getNombre(),
             entity.getEmail(),
+            entity.getPasswordHash(),
             entity.getRoles(),
-            entity.getDepartamentoId() != null 
-                ? new DepartamentoId(entity.getDepartamentoId()) 
+            entity.getDepartamentoId() != null
+                ? new DepartamentoId(entity.getDepartamentoId())
                 : null
         );
     }

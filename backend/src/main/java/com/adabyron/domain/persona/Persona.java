@@ -21,16 +21,18 @@ public class Persona{
     private UUID id;
     private  String nombre; // INV-6
     private  String email; // INV-5
+    private String passwordHash; // Hash de la contraseña
     private Set<Rol> roles; // INV-1, INV-2
     private Integer departamentoId; // INV-3, INV-4
 
     // Constructor sin argumentos requerido por JPA
     protected Persona() {}
 
-    public Persona(PersonaId id, String nombre, String email, Set<Rol> roles, DepartamentoId departamentoId) {
+    public Persona(PersonaId id, String nombre, String email, String passwordHash, Set<Rol> roles, DepartamentoId departamentoId) {
         this.id = Objects.requireNonNull(id, "El id no puede ser nulo").valor();
         this.nombre = validarNombre(nombre);
         this.email = validarEmail(email);
+        this.passwordHash = Objects.requireNonNull(passwordHash, "El hash de contraseña no puede ser nulo");
         this.roles = new HashSet<>(Objects.requireNonNull(roles, "Los roles no pueden ser nulos"));
 
         validarEstadoInicial(this.roles, departamentoId);
@@ -95,9 +97,7 @@ public class Persona{
     }
 
 
-    // **************************
     // Métodos para validaciones inline de los datos de la persona
-    // **************************
 
     private void validarEstadoInicial(Set<Rol> roles, DepartamentoId departamentoId) {
         if (roles.isEmpty()) {
@@ -154,14 +154,12 @@ public class Persona{
                 throw new DepartamentoNoPermitidoException(rol);
     }
 
-    // **************************
     // Getters
-    // **************************
-
     public UUID getId() { return id; }
     public PersonaId getPersonaId() { return new PersonaId(id); }
     public String getNombre() { return nombre; }
     public String getEmail() { return email; }
+    public String getPasswordHash() { return passwordHash; }
     public Set<Rol> getRoles() { return Collections.unmodifiableSet(roles); }
 
     public DepartamentoId getDepartamentoId() {
