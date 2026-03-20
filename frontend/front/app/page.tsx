@@ -56,7 +56,7 @@ export default function PaginaPrincipal() {
         let url = `http://localhost:5000/collections/${selectedFloor}/items?limit=100&_=${timestamp}`;
         if (filterCategory) {
           const categoryUpper = filterCategory.toUpperCase();
-          url += `&properties=USO&additionalProp1=%7B%7D&skipGeometry=false&offset=0&USO=${categoryUpper}`;
+          url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&USO=${categoryUpper}`;
         }
         const response = await fetch(url, {
           cache: 'no-store',

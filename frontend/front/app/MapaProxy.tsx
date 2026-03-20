@@ -31,13 +31,15 @@ export default function MapaProxy({ data, floorId }: { data: any, floorId: strin
           onEachFeature={(feature, layer) => {
 
             layer.bindPopup('<div style="padding: 10px;">Cargando información... ⏳</div>');
+            //layer.bindPopup(`Objeto: ${feature.id}`);
 
             layer.on('click', async () => {
 
-              const idDominio = feature.properties.espacio_id;
+              const idDominio = feature.properties.espacio_id;  
 
               if (!idDominio) {
                 layer.setPopupContent('<div style="padding: 5px;">Espacio sin ID asignado</div>');
+                //layer.bindPopup(`Objeto: ${feature.id}`);
                 return;
               }
 
