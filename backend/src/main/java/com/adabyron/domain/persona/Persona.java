@@ -64,13 +64,16 @@ public class Persona{
     }
 
     /**
-     * Añadir el rol de GERENTE a una persona que ya tiene el rol de DOCENTE_INVESTIGADOR
+     * Añade el rol GERENTE a una persona que ya tiene DOCENTE_INVESTIGADOR.
+     * Es la única combinación de dos roles permitida (REQ-B2).
      */
     public void añadirRolGerente() {
-        if (!tieneRol(Rol.DOCENTE_INVESTIGADOR))
-            throw new RolIncompatibleException(Rol.GERENTE, rolPrincipal());
         if (tieneRol(Rol.GERENTE))
-            return; // idempotente
+            return; // idempotente — ya es gerente, no hacemos nada
+
+        if (!tieneRol(Rol.DOCENTE_INVESTIGADOR))
+            throw new RolIncompatibleException( Rol.GERENTE, rolPrincipal());
+
         roles.add(Rol.GERENTE);
     }
 
@@ -106,18 +109,20 @@ public class Persona{
         if (roles.size() > 2) {
             throw new IllegalArgumentException("La persona no puede tener más de 2 roles");
         }
-        if (roles.size() == 1 && roles.contains(Rol.GERENTE)) {
-            throw new RolIncompatibleException(Rol.GERENTE, Rol.GERENTE);
-        }
         if (roles.size() == 2 &&
             !(roles.contains(Rol.GERENTE) && roles.contains(Rol.DOCENTE_INVESTIGADOR))) {
             throw new IllegalArgumentException("La única combinación válida de 2 roles es GERENTE + DOCENTE_INVESTIGADOR");
         }
 
-        Rol rolPrincipal = roles.stream()
-                .filter(r -> r != Rol.GERENTE)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Debe existir un rol principal distinto de GERENTE"));
+        Rol rolPrincipal;
+        if (roles.size() == 1 && roles.contains(Rol.GERENTE)) {
+            rolPrincipal = Rol.GERENTE;
+        } else {
+            rolPrincipal = roles.stream()
+                    .filter(r -> r != Rol.GERENTE)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("La persona debe tener un rol principal."));
+        }
 
         validarRolDepartamento(rolPrincipal, departamentoId);
     }

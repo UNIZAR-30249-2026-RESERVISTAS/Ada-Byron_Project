@@ -17,6 +17,19 @@ Content-Type: {{contentType}}
     "departamentoId": null
 }
 
+###  Crear una persona (GERENTE)
+# @name crearGerente
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+    "nombre": "Arturo Sánchez",
+    "email": "arturo.sanchez@example.com",
+    "password": "password123",
+    "rol": "GERENTE",
+    "departamentoId": null
+}
+
 ### Guardar ID respuesta para siguientes peticiones (si tu cliente REST lo soporta, sino copiar a mano)
 @idEstudiante = {{crearEstudiante.response.body.id}}
 
