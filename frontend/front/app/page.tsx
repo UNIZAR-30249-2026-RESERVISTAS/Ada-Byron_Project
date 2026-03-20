@@ -17,7 +17,9 @@ export default function PaginaPrincipal() {
   const [selectedFloor, setSelectedFloor] = useState('planta0');
   const [geoData, setGeoData] = useState(null);
   const [filterCategory, setFilterCategory] = useState('');
-  const [ isLoggingOut, setIsLoggingOut ] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [filterId, setFilterId] = useState('');
+  const [filterOcupantes, setFilterOcupantes] = useState('');
 
   const user = getCurrentUser();
 
@@ -46,7 +48,7 @@ export default function PaginaPrincipal() {
     { key: 'sala común', label: 'Sala Común', color: { color: 'red', weight: 1, fillColor: '#ef5757', fillOpacity: 0.8 } },
   ];
 
-  const [filterId, setFilterId] = useState('');
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +59,12 @@ export default function PaginaPrincipal() {
         if (filterCategory) {
           const categoryUpper = filterCategory.toUpperCase();
           url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&USO=${categoryUpper}`;
+        }
+        else if (filterId) {
+          url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&espacio_id=${filterId}`;
+        }
+        else if (filterOcupantes) {
+          //url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&ocupantes_min=${filterOcupantes}`;
         }
         const response = await fetch(url, {
           cache: 'no-store',
@@ -72,7 +80,7 @@ export default function PaginaPrincipal() {
       }
     };
     fetchData();
-  }, [selectedFloor, filterCategory]);
+  }, [selectedFloor, filterCategory, filterId, filterOcupantes]);
 
   return (
     <div className="flex flex-row h-screen w-screen overflow-hidden">
@@ -150,43 +158,37 @@ export default function PaginaPrincipal() {
             ))}
           </div>
         </div>
-      <div className="pl-2">
+        <div className="pl-2 mt-4">
           <label
-              className="block mb-1.5"
-              style={{
-                  fontSize: '11px',
-                  color: '#6B6560',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em'
-              }}
+            className="block mb-1.5"
+            style={{
+              fontSize: '11px',
+              color: '#6B6560',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em'
+            }}
           >
-              Identificador
+            Identificador
           </label>
 
           <div className="relative w-7/8">
-              {/* ICONO */}
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-  🔍
-                </span>
-
-              {/* INPUT */}
-              <input
-                  type="text"
-                  id="identificador"
-                  placeholder="Buscar ID o nombre..."
-                  value={filterId}
-                  onChange={(e) => setFilterId(e.target.value)}
-                  className="w-full py-2 pr-3 pl-9 bg-white rounded-md placeholder-gray-400"
-                  style={{
-                      border: '1px solid #C8C3BB',
-                      fontSize: '13px',
-                      color: '#1B2A4A',
-                      outline: 'none',
-                      fontFamily: "'DM Sans', sans-serif",
-                  }}
-              />
+            <input
+              type="text"
+              id="identificador"
+              placeholder="Buscar por ID"
+              value={filterId}
+              onChange={(e) => setFilterId(e.target.value)}
+              className="w-full py-2 pr-3 pl-9 bg-white rounded-md placeholder-gray-400"
+              style={{
+                border: '1px solid #C8C3BB',
+                fontSize: '13px',
+                color: '#1B2A4A',
+                outline: 'none',
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            />
           </div>
-      </div>
+        </div>
         <div className="pl-2 mt-3">
           <label
             className="block mb-1.5"
@@ -215,37 +217,36 @@ export default function PaginaPrincipal() {
             ))}
           </select>
         </div>
-          <div className="pl-2 mt-4">
-              <label
-                  className="block mb-1.5"
-                  style={{
-                      fontSize: '11px',
-                      color: '#6B6560',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em'
-                  }}
-              >
-                  Ocupantes mínimos
-              </label>
-              <div className="relative w-7/8">
-                  {/* INPUT */}
-                  <input
-                      type="text"
-                      id="identificador"
-                      placeholder="Mín. ocupantes"
-                      value={filterId}
-                      onChange={(e) => setFilterId(e.target.value)}
-                      className="w-full py-2 pr-3 pl-2 bg-white rounded-md placeholder-gray-400"
-                      style={{
-                          border: '1px solid #C8C3BB',
-                          fontSize: '13px',
-                          color: '#1B2A4A',
-                          outline: 'none',
-                          fontFamily: "'DM Sans', sans-serif",
-                      }}
-                  />
-              </div>
+        <div className="pl-2 mt-4">
+          <label
+            className="block mb-1.5"
+            style={{
+              fontSize: '11px',
+              color: '#6B6560',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em'
+            }}
+          >
+            Ocupantes mínimos
+          </label>
+          <div className="relative w-7/8">
+            <input
+              type="text"
+              id="identificador"
+              placeholder="Mín. ocupantes"
+              value={filterOcupantes}
+              onChange={(e) => setFilterOcupantes(e.target.value)}
+              className="w-full py-2 pr-3 pl-2 bg-white rounded-md placeholder-gray-400"
+              style={{
+                border: '1px solid #C8C3BB',
+                fontSize: '13px',
+                color: '#1B2A4A',
+                outline: 'none',
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            />
           </div>
+        </div>
 
       </aside>
 
