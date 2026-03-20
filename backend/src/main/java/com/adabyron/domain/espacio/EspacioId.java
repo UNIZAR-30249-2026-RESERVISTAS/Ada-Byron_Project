@@ -1,7 +1,5 @@
 package com.adabyron.domain.espacio;
 
-import jakarta.validation.constraints.NotNull;
-
 import java.util.regex.Pattern;
 
 public record EspacioId(String id) {

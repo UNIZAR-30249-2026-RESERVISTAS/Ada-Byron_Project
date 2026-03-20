@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,8 +28,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 @WebMvcTest(PersonaController.class)
+@WithMockUser
 class PersonaControllerTest {
 
     @Autowired
@@ -67,6 +70,7 @@ class PersonaControllerTest {
         when(personaService.crearPersona(any(CrearPersonaDTO.class))).thenReturn(personaEstudiante);
 
         mockMvc.perform(post("/api/personas")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
@@ -111,6 +115,7 @@ class PersonaControllerTest {
         when(personaService.cambiarRol(eq(estudianteId), any(CambiarRolDTO.class))).thenReturn(personaActualizada);
 
         mockMvc.perform(put("/api/personas/" + estudianteId + "/rol")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
@@ -122,7 +127,8 @@ class PersonaControllerTest {
         personaDocente.añadirRolGerente();
         when(personaService.añadirRolGerente(docenteId)).thenReturn(personaDocente);
 
-        mockMvc.perform(put("/api/personas/" + docenteId + "/gerente"))
+        mockMvc.perform(put("/api/personas/" + docenteId + "/gerente")
+                .with(csrf()))
                 .andExpect(status().isOk());
     }
 
@@ -130,7 +136,8 @@ class PersonaControllerTest {
     void eliminarPersona_Retorna204_SiExiste() throws Exception {
         doNothing().when(personaService).eliminar(estudianteId);
 
-        mockMvc.perform(delete("/api/personas/" + estudianteId))
+        mockMvc.perform(delete("/api/personas/" + estudianteId)
+                .with(csrf()))
                 .andExpect(status().isNoContent());
 
         verify(personaService, times(1)).eliminar(estudianteId);
