@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Users } from 'lucide-react';
 import { getCurrentUser, logoutUser, checkSession } from '../src/services/auth';
 
 
@@ -29,6 +29,10 @@ export default function PaginaPrincipal() {
     await logoutUser();
     router.push('/login');
   }
+
+  const handleGoToUsersDashboard = () => {
+    router.push('/usuarios');
+  };
 
   const currentFloor = selectedFloor.startsWith('planta')
     ? parseInt(selectedFloor.replace('planta', ''))
@@ -119,6 +123,23 @@ export default function PaginaPrincipal() {
             </div>
           </div>
 
+          <div className="flex items-center gap-1 flex-shrink-0">
+
+        {/* Botón Dashboard Usuarios — solo visible para GERENTE */}
+        {user?.roles?.includes('GERENTE') && (
+          <button
+            onClick={handleGoToUsersDashboard}
+            title="Dashboard de usuarios"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: '#8A8F9E' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#3B6FD4')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#8A8F9E')}
+          >
+            <Users className="size-4" />
+          </button>
+        )}
+
+          {/* Botón de cerrar sesión */}
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
@@ -131,6 +152,7 @@ export default function PaginaPrincipal() {
             <LogOut className="size-4" />
           </button>
         </div>
+      </div>
 
         <div className="pt-4 pl-2" style={{ borderTop: '1px solid #D4CFC6' }}>
           <span
