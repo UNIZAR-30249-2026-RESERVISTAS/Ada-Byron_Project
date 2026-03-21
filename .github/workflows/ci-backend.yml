@@ -5,49 +5,58 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'backend/**'
   pull_request:
     branches:
       - main
-    paths:
-      - 'backend/**'
 
 jobs:
-  build:
+
+  detectar-cambios:
     name: Compilar y verificar Backend
     runs-on: ubuntu-latest
+    outputs:
+      hay-cambios: ${{ steps.filtro.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filtro
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
 
-    # Servicio PostgreSQL real — levanta un contenedor durante el CI
+  build:
+    name: Build Backend
+    needs: detectar-cambios
+    if: needs.detectar-cambios.outputs.hay-cambios == 'true'
+    runs-on: ubuntu-latest
+
     services:
       postgis:
-        image: kartoza/postgis:14   # misma imagen que en nuestro compose.yaml
+        image: kartoza/postgis:14
         env:
           POSTGRES_USER: proyecto
           POSTGRES_PASSWORD: proyectovm
           POSTGRES_DB: proyectodb
           DEFAULT_ENCODING: UTF8
         ports:
-          - 5432:5432               # en CI no hace falta el 25432, accedemos directo
+          - 5432:5432
         options: >-
           --health-cmd "pg_isready -h localhost -U proyecto -d proyectodb"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 10       
+          --health-retries 10
 
     steps:
-      # 1. Descarga el código del repositorio
       - name: Checkout del repositorio
         uses: actions/checkout@v4
 
-      # 2. Configura Java 21 
       - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      # 3. Caché de dependencias Gradle para acelerar el CI
       - name: Caché de dependencias Gradle
         uses: actions/cache@v4
         with:
@@ -58,7 +67,6 @@ jobs:
           restore-keys: |
             gradle-
 
-      # 4. Permisos de ejecución al wrapper
       - name: Dar permisos a gradlew
         working-directory: backend
         run: chmod +x gradlew
@@ -66,20 +74,15 @@ jobs:
       - name: Compilar y ejecutar tests
         working-directory: backend
         env:
-          # Sobreescribe los valores por defecto de application.properties
-          # En CI PostgreSQL está en localhost:5432 (el puerto del service container)
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/proyectodb
           SPRING_DATASOURCE_USERNAME: proyecto
           SPRING_DATASOURCE_PASSWORD: proyectovm
-          # Desactiva la integración automática con Docker Compose de Spring Boot
-          # para que use las variables de entorno de arriba y no busque compose.yaml
           SPRING_DOCKER_COMPOSE_ENABLED: false
         run: ./gradlew build --no-daemon
 
-      # 6. Publicar resultados de tests en el resumen del workflow (opcional pero útil)
       - name: Publicar resultados de tests
         uses: actions/upload-artifact@v4
-        if: always()   # se ejecuta aunque el build falle, para ver qué test falló
+        if: always()
         with:
           name: test-results-backend
           path: backend/build/reports/tests/
