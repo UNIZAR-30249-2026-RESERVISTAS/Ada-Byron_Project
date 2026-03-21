@@ -1,0 +1,48 @@
+name: CI — Frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+
+jobs:
+  build:
+    name: Compilar y verificar Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Descarga el código del repositorio
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # 2. Configuración Node.js
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/front/package-lock.json
+
+      # 3. Instalar dependencias
+      - name: Instalar dependencias
+        working-directory: frontend/front
+        run: npm ci   # ci es más estricto que install: falla si hay discrepancias con package-lock.json
+
+      # 4. Compilar el proyecto
+      #    Si el build compila = el código no tiene errores de TypeScript ni imports rotos
+      - name: Compilar proyecto
+        working-directory: frontend/front
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          # Variables de entorno que Next.js necesita en build time
+          # Apuntan a un backend ficticio — en CI solo comprobamos que compila,
+          # no que la conexión funcione (eso lo haría un test E2E)
+          NEXT_PUBLIC_API_URL: http://localhost:8081
+        run: npm run build
