@@ -89,10 +89,13 @@ public class Persona{
     }
 
     /**
-     * El rol principal de una persona es siempre el que no es GERENTE, ya que GERENTE es un rol adicional que puede coexistir con DOCENTE_INVESTIGADOR.
-     * INV-1 garantiza que siempre existe exactamente un rol principal
+     * El rol principal de una persona en caso de tener dos roles es el que no es GERENTE, ya que GERENTE se puede añadir como rol adicional a un DOCENTE_INVESTIGADOR.
+     * Si solo tiene un rol, ese es el rol principal. 
      */
     public Rol rolPrincipal() {
+        if (roles.size() == 1) {
+            return roles.iterator().next();
+        }
         return roles.stream()
                 .filter(r -> r != Rol.GERENTE)
                 .findFirst()
