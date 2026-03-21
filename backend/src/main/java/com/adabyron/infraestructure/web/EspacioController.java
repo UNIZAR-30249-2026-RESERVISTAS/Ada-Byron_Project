@@ -4,7 +4,6 @@ import com.adabyron.application.espacio.CambiarCategoriaDTO;
 import com.adabyron.application.espacio.CambiarReservableDTO;
 import com.adabyron.application.espacio.EspacioDTO;
 import com.adabyron.application.espacio.EspacioService;
-import com.adabyron.application.persona.PersonaDTO;
 import com.adabyron.domain.espacio.Categoria;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/espacios")
-@CrossOrigin(origins = "http://localhost:3000")
 @Tag(name = "Espacios", description = "Gestión de espacios: consulta, asignación de categoría y de estado")
 public class EspacioController {
     private final EspacioService espacioService;
