@@ -32,7 +32,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
             // CSRF desactivado: Las  peticiones vienen de Next.js con credentials:include,
-            // no de formularios HTML clásicos, por lo que podemos desactivarlo en este contexto.
+            // no de formularios HTML clásicos, por lo que podemos desactivarlo en este contexto
             .csrf(csrf -> csrf.disable())
 
             // Le decimos a Spring Security que se encargue el de gestionar las sesiones,

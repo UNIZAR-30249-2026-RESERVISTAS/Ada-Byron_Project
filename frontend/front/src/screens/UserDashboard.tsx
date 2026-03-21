@@ -115,7 +115,7 @@ export function UsersDashboard() {
         }
     };
 
-    // Función para editar un usuario (por ahora solo muestra un alert)
+    // Función para editar un usuario (por ahora solamente muestra un alert)
     const handleEditUser = (userNombre: string) => {
         alert(`Funcionalidad de edición del usuario ${userNombre} aún no implementada.`);
     };

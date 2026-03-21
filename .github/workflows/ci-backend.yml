@@ -20,7 +20,7 @@ jobs:
     # Servicio PostgreSQL real — levanta un contenedor durante el CI
     services:
       postgis:
-        image: kartoza/postgis:14   # misma imagen que en vuestro compose.yaml
+        image: kartoza/postgis:14   # misma imagen que en nuestro compose.yaml
         env:
           POSTGRES_USER: proyecto
           POSTGRES_PASSWORD: proyectovm
@@ -39,7 +39,7 @@ jobs:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
 
-      # 2. Configura Java 21 (ajusta la versión si usáis otra)
+      # 2. Configura Java 21 
       - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:
