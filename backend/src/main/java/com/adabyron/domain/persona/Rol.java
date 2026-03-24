@@ -38,8 +38,8 @@ public enum Rol {
     public boolean puedeReservarTipoEspacio(CategoriaReserva categoriaReserva) {
         return switch(this) {
             case ESTUDIANTE -> categoriaReserva == CategoriaReserva.SALA_COMUN;
-            // Tanto para el despacho como para el laboratorio, estos debe coincidir con el departamente de la persona, pero esa lógica la implementaremos en el servicio de reserva, aquí solo comprobamos que el rol tiene permiso para reservar ese tipo de espacio.
-            case DOCENTE_INVESTIGADOR, INVESTIGADOR_CONTRATADO -> categoriaReserva == CategoriaReserva.AULA || categoriaReserva == CategoriaReserva.SEMINARIO || categoriaReserva == CategoriaReserva.DESPACHO || categoriaReserva == CategoriaReserva.LABORATORIO;
+            // Para el laboratorio, estos debe coincidir con el departamente de la persona, pero esa lógica la implementaremos en el servicio de reserva, aquí solo comprobamos que el rol tiene permiso para reservar ese tipo de espacio.
+            case DOCENTE_INVESTIGADOR, INVESTIGADOR_CONTRATADO -> categoriaReserva == CategoriaReserva.AULA || categoriaReserva == CategoriaReserva.SEMINARIO || categoriaReserva == CategoriaReserva.LABORATORIO;
             case CONSERJE ->  categoriaReserva == CategoriaReserva.AULA || categoriaReserva == CategoriaReserva.SEMINARIO || categoriaReserva == CategoriaReserva.LABORATORIO || categoriaReserva == CategoriaReserva.SALA_COMUN;
             // Solo lo podrá reserver en caso de que el departamento del técnico de laboratorio coincida con el del espacio, pero esa lógica la implementaremos en el servicio de reserva, aquí solo comprobamos que el rol tiene permiso para reservar ese tipo de espacio.
             case TECNICO_LABORATORIO -> categoriaReserva == CategoriaReserva.LABORATORIO;
