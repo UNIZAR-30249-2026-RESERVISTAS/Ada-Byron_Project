@@ -1,0 +1,95 @@
+### Variables
+@baseUrl = http://localhost:8081/api/reservas
+@contentType = application/json
+
+### ─────────────────────────────────────────
+### 1. Crear reserva válida (estudiante → sala común)
+### Primero necesitas un UUID de persona existente en tu BD
+### ─────────────────────────────────────────
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+    "espacioIds": ["001"],
+    "reservadaPorId": "UUID-DE-UN-ESTUDIANTE-DE-TU-BD",
+    "tipoUso": "DOCENCIA",
+    "numeroAsistentes": 5,
+    "fecha": "2026-04-01",
+    "horaInicio": "09:00",
+    "duracionMinutos": 60,
+    "detallesAdicionales": "Reunión de grupo"
+}
+
+### ─────────────────────────────────────────
+### 2. Crear reserva que debe ser RECHAZADA
+###    (estudiante intentando reservar un aula)
+### ─────────────────────────────────────────
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+    "espacioIds": ["002"],
+    "reservadaPorId": "UUID-DE-UN-ESTUDIANTE-DE-TU-BD",
+    "tipoUso": "DOCENCIA",
+    "numeroAsistentes": 10,
+    "fecha": "2026-04-01",
+    "horaInicio": "10:00",
+    "duracionMinutos": 90,
+    "detallesAdicionales": null
+}
+
+### ─────────────────────────────────────────
+### 3. Listar reservas activas (REQ-H1)
+### ─────────────────────────────────────────
+GET {{baseUrl}}
+
+### ─────────────────────────────────────────
+### 4. Buscar reserva por ID
+###    (sustituye por un UUID real tras crear una)
+### ─────────────────────────────────────────
+GET {{baseUrl}}/UUID-DE-RESERVA
+
+### ─────────────────────────────────────────
+### 5. Listar reservas de una persona
+### ─────────────────────────────────────────
+GET {{baseUrl}}/persona/UUID-DE-PERSONA
+
+### ─────────────────────────────────────────
+### 6. Listar potencialmente inválidas (O4)
+### ─────────────────────────────────────────
+GET {{baseUrl}}/potencialmente-invalidas
+
+### ─────────────────────────────────────────
+### 7. Cancelar reserva (REQ-H2)
+### ─────────────────────────────────────────
+DELETE {{baseUrl}}/UUID-DE-RESERVA?motivo=Cancelada por el gerente
+
+### ─────────────────────────────────────────
+### 8. Revalidar reserva potencialmente inválida (O4)
+### ─────────────────────────────────────────
+PUT {{baseUrl}}/UUID-DE-RESERVA/revalidar
+```
+
+---
+
+## Opción 2 — Swagger UI
+
+Como tenéis Swagger configurado, entra en:
+```
+http://localhost:8081/swagger-ui.html
+```
+
+Ahí aparecerán todos los endpoints del `ReservaController` y puedes ejecutarlos directamente desde el navegador sin escribir nada.
+
+---
+
+## Orden de prueba recomendado
+```
+1. Arranca el backend:  ./gradlew bootRun
+2. Comprueba que la BD tiene personas y espacios (usa tus pruebas-persona.http)
+3. Copia un UUID de persona existente y un ID de espacio existente
+4. Ejecuta el POST para crear una reserva válida → debe devolver estado CONFIRMADA
+5. Ejecuta el POST con una reserva inválida     → debe devolver estado RECHAZADA con motivo
+6. Ejecuta el GET para listar activas           → debe aparecer la reserva confirmada
+7. Ejecuta el DELETE para cancelarla            → debe devolver 204
+8. Ejecuta el GET de nuevo                      → la reserva cancelada no debe aparecer

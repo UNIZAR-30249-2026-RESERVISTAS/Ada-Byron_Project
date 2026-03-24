@@ -9,6 +9,8 @@ public interface EspacioRepository {
 
     Optional<Espacio> findById(EspacioId id);
 
+    List<Espacio> findAllById(List<String> ids);
+
     List<Espacio> findByCategoria(Categoria categoria);
 
     List<Espacio> findByNumOcupantes(int numOcupantes);
