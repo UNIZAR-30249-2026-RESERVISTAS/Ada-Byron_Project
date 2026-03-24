@@ -1,0 +1,107 @@
+### Variables
+@baseUrl = http://localhost:8081/api/reservas
+@contentType = application/json
+
+### ─────────────────────────────────────────
+### 1. Crear reserva válida (estudiante → sala común), DEBE SER CONFIRMADA
+### Primero necesitas un UUID de persona existente en tu BD
+### ─────────────────────────────────────────
+### El ID de un espacio común en nuestra BD, ID de un estudiante
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+    "espacioIds": ["107"],
+    "reservadaPorId": "8124f18a-b69f-428b-b235-ddfb4979ace9", 
+    "tipoUso": "DOCENCIA",
+    "numeroAsistentes": 5,
+    "fecha": "2026-07-01",
+    "horaInicio": "09:00",
+    "duracionMinutos": 60,
+    "detallesAdicionales": null
+}
+
+### ─────────────────────────────────────────
+### 2. Crear reserva que debe ser RECHAZADA
+###    (estudiante intentando reservar un DESPACHO, no es reservable)
+### ─────────────────────────────────────────
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+    "espacioIds": ["001"],
+    "reservadaPorId": "8124f18a-b69f-428b-b235-ddfb4979ace9",
+    "tipoUso": "DOCENCIA",
+    "numeroAsistentes": 10,
+    "fecha": "2026-04-03",
+    "horaInicio": "10:00",
+    "duracionMinutos": 90,
+    "detallesAdicionales": null
+}
+
+### ─────────────────────────────────────────
+###  Crear reserva que debe ser RECHAZADA
+###    (estudiante intentando reservar un AULA )
+### ─────────────────────────────────────────
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+    "espacioIds": ["002"],
+    "reservadaPorId": "8124f18a-b69f-428b-b235-ddfb4979ace9",
+    "tipoUso": "DOCENCIA",
+    "numeroAsistentes": 10,
+    "fecha": "2026-08-01",
+    "horaInicio": "10:00",
+    "duracionMinutos": 90,
+    "detallesAdicionales": null
+}
+
+### ─────────────────────────────────────────
+###  Crear reserva que debe ser CONFIRMADA
+###    (docente-investigador intentando reservar un LABORATORIO )
+### ─────────────────────────────────────────
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+    "espacioIds": ["324"],
+    "reservadaPorId": "73f0901c-813d-47c1-bcca-76673c63a605",
+    "tipoUso": "INVESTIGACION",
+    "numeroAsistentes": 6,
+    "fecha": "2026-05-09",
+    "horaInicio": "10:00",
+    "duracionMinutos": 90,
+    "detallesAdicionales": "Reserva para experimento"
+}
+
+### ─────────────────────────────────────────
+### 3. Listar reservas activas (REQ-H1) (FUNCIONA BIEN)
+### ─────────────────────────────────────────
+GET {{baseUrl}}
+
+### ─────────────────────────────────────────
+### 4. Buscar reserva por ID (FUNCIONA BIEN)
+###    (sustituye por un UUID real tras crear una)
+### ─────────────────────────────────────────
+GET {{baseUrl}}/2d77ebfa-3325-4a7a-a3aa-960a8774feb8
+
+### ─────────────────────────────────────────
+### 5. Listar reservas de una persona (FUNCIONA BIEN)
+### ─────────────────────────────────────────
+GET {{baseUrl}}/persona/8124f18a-b69f-428b-b235-ddfb4979ace9
+
+### ─────────────────────────────────────────
+### 6. Listar potencialmente inválidas (O4)
+### ─────────────────────────────────────────
+GET {{baseUrl}}/potencialmente-invalidas
+
+### ─────────────────────────────────────────
+### 7. Cancelar reserva (REQ-H2) (FUNCIONA BIEN)
+### ─────────────────────────────────────────
+DELETE {{baseUrl}}/c2634c60-182e-4fb3-b55d-67e84721ed15?motivo=Cancelada por el gerente
+
+### ─────────────────────────────────────────
+### 8. Revalidar reserva potencialmente inválida (O4)
+### ─────────────────────────────────────────
+PUT {{baseUrl}}/UUID-DE-RESERVA/revalidar

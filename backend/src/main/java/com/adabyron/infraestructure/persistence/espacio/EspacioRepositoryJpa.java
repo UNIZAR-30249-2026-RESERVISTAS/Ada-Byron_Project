@@ -29,6 +29,13 @@ public class EspacioRepositoryJpa implements EspacioRepository {
         return jpa.findById(id.id()).map(EspacioConverters::toDomain);
     }
 
+    @Override 
+    public List<Espacio> findAllById(List<String> ids) {
+        return jpa.findAllById(ids).stream()
+                  .map(EspacioConverters::toDomain)
+                  .toList();
+    }
+
     @Override
     public List<Espacio> findByCategoria(Categoria categoria){
         return jpa.findByCategoria(categoria.getNombre()).stream()
