@@ -8,9 +8,11 @@ import com.adabyron.domain.persona.Rol;
 import com.adabyron.domain.reserva.IntervaloTemporal;
 import com.adabyron.domain.reserva.Reserva;
 import com.adabyron.domain.reserva.exception.ReservaInvalidaException;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+@Service
 public class ReservaValidacionService {
     /**
      * Valida todas las reglas de reserva (F1-F8) para un espacio concreto.

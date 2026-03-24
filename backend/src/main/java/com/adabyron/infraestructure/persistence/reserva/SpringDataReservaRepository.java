@@ -27,6 +27,6 @@ public interface SpringDataReservaRepository extends JpaRepository<ReservaJpaEnt
     List<ReservaJpaEntity> findByReservadaPorId(UUID personaId);
 
     // Involucra dos condiciones, requiere JPQL explícito
-    @Query("SELECT r FROM ReservaJpaEntity r WHERE r.estado = 'SOLICITADA' AND r.fechaFin < :ahora")
+    @Query("SELECT r FROM ReservaJpaEntity r WHERE r.estado = 'POTENCIALMENTE_INVALIDA' AND r.fechaFin > :ahora")
     List<ReservaJpaEntity> findPotencialmenteInvalidas(@Param("ahora") LocalDateTime ahora);
 }
