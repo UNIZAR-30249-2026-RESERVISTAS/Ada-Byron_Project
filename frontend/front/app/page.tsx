@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { LogOut, User, Users } from 'lucide-react';
+import { LogOut, User, Users, BookMarked } from 'lucide-react';
 import { getCurrentUser, logoutUser, checkSession } from '../src/services/auth';
 
 
@@ -34,6 +34,10 @@ export default function PaginaPrincipal() {
     router.push('/usuarios');
   };
 
+  const handleGoToReservationsDashboard = () => {
+    router.push('/reservas');
+  }
+
   const currentFloor = selectedFloor.startsWith('planta')
     ? parseInt(selectedFloor.replace('planta', ''))
     : (selectedFloor === 'sotano1' ? -1 : 0);
@@ -52,7 +56,7 @@ export default function PaginaPrincipal() {
     { key: 'sala común', label: 'Sala Común', color: { color: 'red', weight: 1, fillColor: '#ef5757', fillOpacity: 0.8 } },
   ];
 
-  
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -125,34 +129,48 @@ export default function PaginaPrincipal() {
 
           <div className="flex items-center gap-1 flex-shrink-0">
 
-        {/* Botón Dashboard Usuarios — solo visible para GERENTE */}
-        {user?.roles?.includes('GERENTE') && (
-          <button
-            onClick={handleGoToUsersDashboard}
-            title="Dashboard de usuarios"
-            className="p-1.5 rounded-lg transition-colors"
-            style={{ color: '#8A8F9E' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#3B6FD4')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#8A8F9E')}
-          >
-            <Users className="size-4" />
-          </button>
-        )}
+            {/* Botón Dashboard Usuarios — solo visible para GERENTE */}
+            {user?.roles?.includes('GERENTE') && (
+              <button
+                onClick={handleGoToUsersDashboard}
+                title="Dashboard de usuarios"
+                className="p-1.5 rounded-lg transition-colors"
+                style={{ color: '#8A8F9E' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#3B6FD4')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#8A8F9E')}
+              >
+                <Users className="size-4" />
+              </button>
+            )}
 
-          {/* Botón de cerrar sesión */}
-          <button
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            title="Cerrar sesión"
-            className="flex-shrink-0 p-1.5 rounded-lg transition-colors"
-            style={{ color: '#8A8F9E' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#C0392B')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#8A8F9E')}
-          >
-            <LogOut className="size-4" />
-          </button>
+            {/* Botón Dashboard Reservas — solo visible para GERENTE */}
+            {user?.roles?.includes('GERENTE') && (
+              <button
+                onClick={handleGoToReservationsDashboard}
+                title="Dashboard de reservas"
+                className="p-1.5 rounded-lg transition-colors"
+                style={{ color: '#8A8F9E' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#3B6FD4')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#8A8F9E')}
+              >
+                <BookMarked className="size-4" />
+              </button>
+            )}
+
+            {/* Botón de cerrar sesión */}
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              title="Cerrar sesión"
+              className="flex-shrink-0 p-1.5 rounded-lg transition-colors"
+              style={{ color: '#8A8F9E' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#C0392B')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#8A8F9E')}
+            >
+              <LogOut className="size-4" />
+            </button>
+          </div>
         </div>
-      </div>
 
         <div className="pt-4 pl-2" style={{ borderTop: '1px solid #D4CFC6' }}>
           <span
