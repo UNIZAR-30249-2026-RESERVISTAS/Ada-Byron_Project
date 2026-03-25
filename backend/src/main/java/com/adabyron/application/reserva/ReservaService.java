@@ -31,12 +31,12 @@ public class ReservaService {
 
     public Reserva crearReserva(CrearReservaDTO dto) {
 
-    // 1. Validar existencia de persona
+    // 1. Validamos existencia de persona
     var persona = personaRepository.findById(dto.reservadaPorId())
         .orElseThrow(() -> new IllegalArgumentException(
             "Persona no encontrada: " + dto.reservadaPorId()));
 
-    // 2. Convertir String IDs a EspacioId y cargar los Espacio completos
+    // 2. Convertimos String IDs a EspacioId y cargar los Espacio completos
     List<EspacioId> espacioIds = dto.espacioIds().stream()
         .map(EspacioId::new)
         .toList();
@@ -47,12 +47,12 @@ public class ReservaService {
                 "Espacio no encontrado: " + id.id())))
         .toList();
 
-    // 3. Construir el IntervaloTemporal antes de llamar al factory
+    // 3. Construimos el IntervaloTemporal antes de llamar al factory
     IntervaloTemporal intervalo = IntervaloTemporal.of(
         dto.fecha(), dto.horaInicio(), dto.duracionMinutos()
     );
 
-    // 4. Crear reserva en estado SOLICITADA — factory recibe los tipos correctos
+    // 4. Creamos reserva en estado SOLICITADA — factory recibe los tipos correctos
     var reserva = ReservaFactory.crearNuevaReserva(
         espacioIds,
         persona.getPersonaId(),   // PersonaId, no Persona
@@ -62,7 +62,7 @@ public class ReservaService {
         dto.detallesAdicionales()
     );
 
-    // 5. Validar reglas F1-F8 para cada espacio
+    // 5. Validamos reglas F1-F8 para cada espacio
     try {
         for (Espacio espacio : espacios) {
             List<Reserva> reservasExistentes =
@@ -73,7 +73,7 @@ public class ReservaService {
                 espacio,
                 dto.numeroAsistentes(),
                 intervalo,
-                1.0,                        // porcentaje ocupación — ajustar cuando esté el agregado Edificio
+                1.0,                        // porcentaje ocupación — corregir cuando tengamos el agregado Edificio
                 reservasExistentes,
                 persona.getDepartamentoId()
             );
@@ -90,7 +90,7 @@ public class ReservaService {
 
     /**
      * REQ-H1 — Los gerentes consultan todas las reservas activas
-     * (aquellas cuya hora de finalización es posterior al momento actual).
+     * (aquellas cuya hora de finalización es posterior al momento actual y su estado es CONFIRMADA o POTENCIALMENTE_INVÁLIDA).
      */
     @Transactional(readOnly = true)
     public List<Reserva> listarReservasActivas() {
@@ -118,25 +118,61 @@ public class ReservaService {
  
     /**
      * REQ-H2 — El gerente cancela una reserva y se notifica al usuario (REQ-I2).
+     * También permite al creador de la reserva cancelar su propia reserva.
      */
-    public Reserva cancelarReserva(UUID id, String motivo) {
+    public Reserva cancelarReserva(UUID id, UUID solicitanteId, String motivo) {
+        // Validamos que la persona existe y obtener sus roles
+        var persona = personaRepository.findById(solicitanteId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Persona no encontrada: " + solicitanteId));
+
         Reserva reserva = buscarPorId(id);
-        reserva.cancelar(motivo != null ? motivo : "Cancelada por el gerente");
+        reserva.cancelar(persona.getRoles(), persona.getPersonaId(), motivo != null ? motivo : "Cancelada");
         return reservaRepository.save(reserva);
     }
  
     /**
-     * O4 — El gerente devuelve una reserva potencialmente inválida a estado CONFIRMADA.
+     * O4 — El gerente convierte una reserva potencialmente inválida a estado CONFIRMADA.
      */
-    public Reserva revalidarReserva(UUID id) {
+    public Reserva revalidarReserva(UUID id, UUID gerenteId) {
+        // Validamos que la persona existe y obtener sus roles
+        var persona = personaRepository.findById(gerenteId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Persona no encontrada: " + gerenteId));
+
         Reserva reserva = buscarPorId(id);
-        reserva.revalidar();
+        reserva.revalidar(persona.getRoles());
         return reservaRepository.save(reserva);
     }
  
-    public void eliminarReserva(UUID id) {
-        if (!reservaRepository.findById(id).isPresent())
-            throw new ReservaNotFoundException("Reserva no encontrada: " + id);
+    /**
+     * Elimina físicamente una reserva de la BD (hard delete).
+     * IMPORTANTE: Esta operación es irreversible.
+     *
+     * Puede ser realizada por:
+     * - El GERENTE (puede eliminar cualquier reserva)
+     * - El usuario que creó la reserva (solo puede eliminar las suyas)
+     */
+    public void eliminarReserva(UUID id, UUID solicitanteId) {
+        // Validamos que la persona existe y obtener sus roles
+        var persona = personaRepository.findById(solicitanteId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Persona no encontrada: " + solicitanteId));
+
+        // Buscamos la reserva
+        Reserva reserva = reservaRepository.findById(id)
+            .orElseThrow(() -> new ReservaNotFoundException("Reserva no encontrada: " + id));
+
+        // Validamos permisos (misma lógica que cancelar)
+        boolean esGerente = persona.getRoles().contains(com.adabyron.domain.persona.Rol.GERENTE);
+        boolean esCreador = reserva.getReservadaPorId().equals(persona.getPersonaId());
+
+        if (!esGerente && !esCreador) {
+            throw new com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException(
+                "Solo el gerente o el creador de la reserva pueden eliminarla");
+        }
+
+        // Eliminamos físicamente
         reservaRepository.deleteById(id);
     }
 }

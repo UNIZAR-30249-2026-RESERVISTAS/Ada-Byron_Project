@@ -7,6 +7,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalTime;
+
 @Entity
 @Table(name = "espacios")
 @Setter @Getter
@@ -27,4 +29,15 @@ public class EspacioJpaEntity {
 
     @Column(name = "tamaño", updatable = false, nullable = false)
     private double tamanyo;
+
+    /**
+     * Horario específico del espacio (REQ-C6).
+     * Si ambos son null, el espacio usa el horario del edificio por defecto (REQ-C5).
+     * Ambas columnas deben tener valor o ambas null (no se permite solo una).
+     */
+    @Column(name = "hora_apertura", nullable = true)
+    private LocalTime horaApertura;
+
+    @Column(name = "hora_cierre", nullable = true)
+    private LocalTime horaCierre;
 }
