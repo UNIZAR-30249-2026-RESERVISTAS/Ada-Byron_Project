@@ -1,0 +1,49 @@
+### Variables
+@baseUrl = http://localhost:8081/api/espacios
+@contentType = application/json
+
+### 1. Obtener información de un espacio (incluye horario)
+###    REQ-C5: Si no tiene horario específico, devuelve el del edificio (8:00-21:00)
+GET {{baseUrl}}/107
+
+### 2. Obtener solo el horario de un espacio
+###    REQ-C5: Devuelve horario específico o del edificio
+GET {{baseUrl}}/107/horario
+
+### 3. Cambiar el horario de un espacio - Solo GERENTE (REQ-C6)
+###    El horario debe estar dentro del horario del edificio (8:00-21:00)
+###    Ejemplo válido: 09:00 - 18:00 
+PUT {{baseUrl}}/107/horario?gerenteId=2b3c463d-4497-4ba8-8f9d-ac6669983257
+Content-Type: {{contentType}}
+
+{
+    "horaApertura": "09:00",
+    "horaCierre": "18:00"
+}
+
+### 4. Cambiar horario inválido - DEBE FALLAR 
+###    El horario está fuera del horario del edificio (7:00 < 8:00)
+PUT {{baseUrl}}/107/horario?gerenteId=2b3c463d-4497-4ba8-8f9d-ac6669983257
+Content-Type: {{contentType}}
+
+{
+    "horaApertura": "07:00",
+    "horaCierre": "22:00"
+}
+
+### 5. Cambiar horario sin ser gerente - DEBE FALLAR 
+###    Usar un UUID de usuario normal (no gerente)
+PUT {{baseUrl}}/107/horario?gerenteId=8124f18a-b69f-428b-b235-ddfb4979ace9
+Content-Type: {{contentType}}
+
+{
+    "horaApertura": "09:00",
+    "horaCierre": "18:00"
+}
+
+### 6. Restablecer horario al del edificio - Solo GERENTE (REQ-C6)
+###    Elimina el horario específico y vuelve al horario del edificio (8:00-21:00)
+DELETE {{baseUrl}}/107/horario?gerenteId=2b3c463d-4497-4ba8-8f9d-ac6669983257
+
+### 7. Restablecer horario sin ser gerente - DEBE FALLAR 
+DELETE {{baseUrl}}/107/horario?gerenteId=8124f18a-b69f-428b-b235-ddfb4979ace9

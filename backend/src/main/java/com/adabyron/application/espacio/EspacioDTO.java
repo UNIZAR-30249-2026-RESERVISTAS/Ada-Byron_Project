@@ -2,13 +2,13 @@ package com.adabyron.application.espacio;
 
 import com.adabyron.domain.espacio.Espacio;
 
-
 public record EspacioDTO(
         String id,
         String categoria,
         int ocupantes,
         double area,
-        boolean reservable
+        boolean reservable,
+        HorarioDTO horario
 ) {
     public static EspacioDTO fromEntity(Espacio espacio) {
         return new EspacioDTO(
@@ -16,7 +16,11 @@ public record EspacioDTO(
                 espacio.getCategoria().getNombre(),
                 espacio.getNumOcupantes(),
                 espacio.getTamanyo(),
-                espacio.isReservable()
+                espacio.isReservable(),
+                HorarioDTO.fromDomain(
+                    espacio.getHorarioDisponible(),
+                    !espacio.tieneHorarioEspecifico()
+                )
         );
     }
 }

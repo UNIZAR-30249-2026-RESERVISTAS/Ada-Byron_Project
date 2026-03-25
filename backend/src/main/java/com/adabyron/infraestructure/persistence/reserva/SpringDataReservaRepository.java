@@ -16,11 +16,11 @@ import java.util.UUID;
 public interface SpringDataReservaRepository extends JpaRepository<ReservaJpaEntity, UUID> {
 
     // JpaRepository NO puede deducir esta query por nombre, necesita JPQL explícito
-    @Query("SELECT r FROM ReservaJpaEntity r WHERE r.fechaFin > :ahora AND r.estado = 'CONFIRMADA'")
+    @Query("SELECT r FROM ReservaJpaEntity r WHERE r.fechaFin > :ahora AND (r.estado = 'CONFIRMADA' OR r.estado = 'POTENCIALMENTE_INVALIDA')")
     List<ReservaJpaEntity> findReservasActivas(@Param("ahora") LocalDateTime ahora);
 
     // Involucra un JOIN con la colección espacioIds, requiere JPQL explícito
-    @Query("SELECT r FROM ReservaJpaEntity r JOIN r.espacioIds e WHERE e = :espacioId AND r.estado = 'CONFIRMADA'")
+    @Query("SELECT r FROM ReservaJpaEntity r JOIN r.espacioIds e WHERE e = :espacioId AND (r.estado = 'CONFIRMADA' OR r.estado = 'POTENCIALMENTE_INVALIDA')")
     List<ReservaJpaEntity> findActivasByEspacioId(@Param("espacioId") String espacioId);
 
     // Spring Data puede deducir este por nombre de método, no necesitamos pasarle @Query

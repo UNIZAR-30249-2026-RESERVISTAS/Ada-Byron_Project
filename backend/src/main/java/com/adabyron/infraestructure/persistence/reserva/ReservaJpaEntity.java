@@ -8,6 +8,23 @@ import java.util.*;
 import com.adabyron.domain.reserva.EstadoReserva;
 import com.adabyron.domain.reserva.TipoUsoReserva;
 
+/**
+ * Entidad JPA para la persistencia de reservas — capa de infraestructura.
+ *
+ * REPRESENTACIÓN TEMPORAL:
+ * Utiliza dos columnas separadas (fechaInicio, fechaFin) de tipo LocalDateTime por dos razones:
+ *   1. JPA requiere campos "planos" para mapear a columnas de base de datos.
+ *      Los Value Objects como IntervaloTemporal requieren @Embedded o descomposición manual.
+ *   2. Facilita consultas SQL directas (ej: "WHERE fechaFin > :ahora" para reservas activas).
+ *
+ * El dominio (Reserva) encapsula esto en un IntervaloTemporal (Value Object), y el mapper
+ * (ReservaRepositoryJpa) se encarga de la conversión bidireccional:
+ *   - Dominio → BD: intervalo.fechaInicio() / intervalo.fechaFin()
+ *   - BD → Dominio: new IntervaloTemporal(fechaInicio, fechaFin)
+ *
+ * Ver IntervaloTemporal para la representación en el dominio.
+ * Ver CrearReservaDTO para la representación en el API.
+ */
 @Entity
 @Table(name = "reservas")
 public class ReservaJpaEntity {
