@@ -52,6 +52,13 @@ public class ReservaRepositoryJpa implements ReservaRepository {
     }
 
     @Override
+    public List<Reserva> findReservasActivasPorId(UUID personaId, LocalDateTime ahora) {
+        return  jpa.findReservasActivasPorId(personaId, ahora).stream()
+                  .map(this::toDomain)
+                  .toList();
+    }
+
+    @Override
     public List<Reserva> findPotencialmenteInvalidas(LocalDateTime ahora) {
         return jpa.findPotencialmenteInvalidas(ahora).stream()
                   .map(this::toDomain)
