@@ -23,11 +23,8 @@ interface Reservation {
 
 // Mapeo de roles a etiquetas legibles
 const estadoLabels: Record<string, string> = {
-    SOLICITADA: 'Solicitada',
     CONFIRMADA: 'Confirmada',
-    RECHAZADA: 'Rechazada',
-    POTENCIALMENTE_INVALIDA: 'Potencialmente Inválida',
-    CANCELADA: 'Cancelada'
+    POTENCIALMENTE_INVALIDA: 'Potencialmente Inválida'
 };
 
 // Mapeo de colores por rol para la UI
@@ -70,6 +67,7 @@ export function ReservationDashboard() {
     const [searchTerm, setSearchTerm] = useState('');
     const [estadoFilter, setEstadoFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [nombres, setNombres] = useState<Record<string, string>>({});
 
     // Función para cargar los usuarios
     const fetchUsers = async () => {
@@ -120,6 +118,28 @@ export function ReservationDashboard() {
         alert(`Funcionalidad de edición de la reserva ${reservationId} aún no implementada.`);
     };
 
+    const buscarNombreUsuario = async (personaId: string) => {
+        try {
+            const response = await fetch(`http://localhost:8081/api/personas/${personaId}`);
+            if (!response.ok) {
+                throw new Error('Error al cargar el número de reservas');
+            }
+            const data = await response.json();
+            setNombres(prev => ({ ...prev, [personaId]: data.nombre }));
+            console.log(`Nombre de usuario para ID ${personaId}: ${data.nombre}`);
+        } catch (err) {
+        }
+    };
+
+    useEffect(() => {
+            // Recorremos la lista de usuarios que acabamos de descargar
+            reservations.forEach(r => {
+                // Para evitar llamadas infinitas o repetidas, comprobamos si ya lo hemos buscado
+                if (nombres[r.id] === undefined) {
+                    buscarNombreUsuario(r.reservadaPorId);
+                }
+            });
+        }, [reservations]);
 
     const filteredReservations = useMemo(() => {
         return reservations
@@ -187,7 +207,7 @@ export function ReservationDashboard() {
                             </div>
                             <BookMarked className="size-5" style={{ color: 'rgba(255,255,255,0.4)' }} />
                         </div>
-                        {/* Estadi mini-bars */}
+                        {/* Estado mini-bars */}
                         <div className="flex items-end gap-[3px] mt-2" style={{ height: '20px' }}>
                             {Object.entries(roleDistribution).map(([role, count]) => (
                                 <div
@@ -278,7 +298,7 @@ export function ReservationDashboard() {
                                             <div className="flex items-center gap-1.5">
                                                 <div>
                                                     <span style={{ fontSize: '14px', color: '#6B6560', fontWeight: 500, display: 'block' }}>
-                                                        {reservation.reservadaPorId}
+                                                        {nombres[reservation.reservadaPorId] || reservation.reservadaPorId}
                                                     </span>
                                                 </div>
                                             </div>
@@ -288,7 +308,7 @@ export function ReservationDashboard() {
                                         <td className="px-5 py-3.5">
                                             <div className="flex items-center gap-1.5">
                                                 <span style={{ fontSize: '13px', color: '#6B6560' }}>
-                                                    <td>{reservation.espacioIds?.join(', ') || 'Sin espacios asignados'}</td>
+                                                    {reservation.espacioIds?.join(', ') || 'Sin espacios asignados'}
                                                 </span>
                                             </div>
                                         </td>

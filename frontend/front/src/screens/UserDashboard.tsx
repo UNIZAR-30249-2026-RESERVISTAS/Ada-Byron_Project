@@ -91,14 +91,14 @@ export function UsersDashboard() {
 
     const fetchNumeroReservas = async (personaId: string) => {
         try {
-            const response = await fetch(`http://localhost:8081/api/reservas/persona/${personaId}`);
+            const response = await fetch(`http://localhost:8081/api/reservas/activas/${personaId}`);
             if (!response.ok) {
                 throw new Error('Error al cargar el número de reservas');
             }
             const data = await response.json();
             setReservasPorUsuario(estadoAnterior => ({
-                ...estadoAnterior,          // Mantenemos las reservas de los demás usuarios
-                [personaId]: data.length    // Añadimos o actualizamos el de este usuario en concreto
+                ...estadoAnterior,
+                [personaId]: data.length
             }));
         } catch (err) {
             console.error(err);
