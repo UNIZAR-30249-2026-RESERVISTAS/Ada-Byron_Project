@@ -10,7 +10,7 @@ Content-Type: {{contentType}}
 
 {
     "espacioIds": ["107"],
-    "reservadaPorId": "8124f18a-b69f-428b-b235-ddfb4979ace9", 
+    "reservadaPorId": "86a40355-767c-4413-9f04-5329f0e7c36a", 
     "tipoUso": "DOCENCIA",
     "numeroAsistentes": 5,
     "fecha": "2026-07-01",
@@ -26,7 +26,7 @@ Content-Type: {{contentType}}
 
 {
     "espacioIds": ["001"],
-    "reservadaPorId": "8124f18a-b69f-428b-b235-ddfb4979ace9",
+    "reservadaPorId": "86a40355-767c-4413-9f04-5329f0e7c36a",
     "tipoUso": "DOCENCIA",
     "numeroAsistentes": 10,
     "fecha": "2026-04-03",
@@ -42,7 +42,7 @@ Content-Type: {{contentType}}
 
 {
     "espacioIds": ["002"],
-    "reservadaPorId": "8124f18a-b69f-428b-b235-ddfb4979ace9",
+    "reservadaPorId": "86a40355-767c-4413-9f04-5329f0e7c36a",
     "tipoUso": "DOCENCIA",
     "numeroAsistentes": 10,
     "fecha": "2026-08-01",

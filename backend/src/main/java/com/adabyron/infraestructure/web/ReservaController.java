@@ -141,6 +141,30 @@ public class ReservaController {
                              .map(ReservaDTO::fromEntity)
                              .toList();
     }
+
+    @Operation(
+            summary = "Listar reservas activas de una persona",
+            description = "Devuelve todas las reservas activas de la persona cuyo UUID se indica"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Lista de reservas activas de la persona obtenida correctamente.",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            array = @ArraySchema(schema = @Schema(implementation = ReservaDTO.class))
+                    )
+            )
+    })
+    @GetMapping("/activas/{personaId}")
+    public List<ReservaDTO> listarActivasPorPersona(
+        @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
+        @PathVariable UUID personaId
+    ) {
+        return reservaService.listarActivasPorPersona(personaId).stream()
+                .map(ReservaDTO::fromEntity)
+                             .toList();
+    }
  
     @Operation(
         summary = "Listar reservas potencialmente inválidas",

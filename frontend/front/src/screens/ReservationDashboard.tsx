@@ -5,44 +5,40 @@ import {
     Search,
     Edit,
     Trash2,
-    Users,
     ChevronLeft,
     ChevronRight,
-    Mail,
-    BookOpen,
+    BookMarked
 } from 'lucide-react';
 
 // Interfaz adaptada a la estructura de PersonaDTO del backend
-interface SystemUser {
+interface Reservation {
     id: string;
-    nombre: string;
-    email: string;
-    roles: string[];
-    departamentoNombre?: string; // Opcional, por si no todos los usuarios tienen departamento
+    espacioIds: string[];
+    reservadaPorId: string;
+    numeroAsistentes: number;
+    fechaInicio: string;
+    fechaFin: string;
+    estado: string;
 }
 
 // Mapeo de roles a etiquetas legibles
-const roleLabels: Record<string, string> = {
-    ESTUDIANTE: 'Estudiante',
-    DOCENTE_INVESTIGADOR: 'Docente-Investigador',
-    INVESTIGADOR_CONTRATADO: 'Investigador Contratado',
-    CONSERJE: 'Conserje',
-    TECNICO_LABORATORIO: 'Técnico de Laboratorio',
-    GERENTE: 'Gerente',
+const estadoLabels: Record<string, string> = {
+    CONFIRMADA: 'Confirmada',
+    POTENCIALMENTE_INVALIDA: 'Potencialmente Inválida'
 };
 
 // Mapeo de colores por rol para la UI
-const roleColors: Record<string, string> = {
-    ESTUDIANTE: '#3B6FD4',
-    DOCENTE_INVESTIGADOR: '#2A9B6F',
-    INVESTIGADOR_CONTRATADO: '#C07A2A',
-    CONSERJE: '#8A8F9E',
-    TECNICO_LABORATORIO: '#7B52A8',
-    GERENTE: '#C0392B',
+const estadoColors: Record<string, string> = {
+    SOLICITADA: '#3B6FD4',
+    CONFIRMADA: '#2A9B6F',
+    RECHAZADA: '#C07A2A',
+    POTENCIALMENTE_INVALIDA: '#8A8F9E',
+    CANCELADA: '#C0392B'
 };
 
 const ITEMS_PER_PAGE = 10;
 
+{/*
 function UserAvatar({ name, role }: { name: string; role: string }) {
     const initials = name
         .split(' ')
@@ -62,26 +58,27 @@ function UserAvatar({ name, role }: { name: string; role: string }) {
         </div>
     );
 }
+*/}
 
-export function UsersDashboard() {
-    const [users, setUsers] = useState<SystemUser[]>([]);
-    const [reservasPorUsuario, setReservasPorUsuario] = useState<Record<string, number>>({});
+export function ReservationDashboard() {
+    const [reservations, setReservations] = useState<Reservation[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [roleFilter, setRoleFilter] = useState('');
+    const [estadoFilter, setEstadoFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [nombres, setNombres] = useState<Record<string, string>>({});
 
     // Función para cargar los usuarios
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:8081/api/personas');
+            const response = await fetch('http://localhost:8081/api/reservas');
             if (!response.ok) {
                 throw new Error('Error al cargar los usuarios desde la API');
             }
-            const data: SystemUser[] = await response.json();
-            setUsers(data);
+            const data: Reservation[] = await response.json();
+            setReservations(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Un error desconocido ha ocurrido');
         } finally {
@@ -89,56 +86,26 @@ export function UsersDashboard() {
         }
     };
 
-    const fetchNumeroReservas = async (personaId: string) => {
-        try {
-            const response = await fetch(`http://localhost:8081/api/reservas/activas/${personaId}`);
-            if (!response.ok) {
-                throw new Error('Error al cargar el número de reservas');
-            }
-            const data = await response.json();
-            setReservasPorUsuario(estadoAnterior => ({
-                ...estadoAnterior,
-                [personaId]: data.length
-            }));
-        } catch (err) {
-            console.error(err);
-            setReservasPorUsuario(estadoAnterior => ({
-                ...estadoAnterior,
-                [personaId]: 0
-            })); // En caso de error, devolvemos 0 para no romper la UI
-        }
-    };
-
     useEffect(() => {
         fetchUsers();
     }, []);
 
-    useEffect(() => {
-        // Recorremos la lista de usuarios que acabamos de descargar
-        users.forEach(user => {
-            // Para evitar llamadas infinitas o repetidas, comprobamos si ya lo hemos buscado
-            if (reservasPorUsuario[user.id] === undefined) {
-                fetchNumeroReservas(user.id);
-            }
-        });
-    }, [users]);
-
-    // Función para eliminar un usuario
-    const handleDeleteUser = async (userId: string) => {
-        if (window.confirm('¿Estás seguro de que quieres eliminar a este usuario?')) {
+    // Función para eliminar una reserva
+    const handleDeleteReservation = async (id: string) => {
+        if (window.confirm('¿Estás seguro de que quieres eliminar esta reserva?')) {
             try {
-                const response = await fetch(`http://localhost:8081/api/personas/${userId}`, {
+                const response = await fetch(`http://localhost:8081/api/reservas/eliminar/${id}`, {
                     method: 'DELETE',
                 });
 
                 if (!response.ok) {
                     // Si el status no es 2xx, lanzamos un error para que lo capture el catch
                     const errorData = await response.text();
-                    throw new Error(errorData || 'Error al eliminar el usuario.');
+                    throw new Error(errorData || 'Error al eliminar la reserva.');
                 }
 
                 // Si se elimina correctamente, actualizamos el estado para reflejar el cambio en la UI
-                setUsers(currentUsers => currentUsers.filter(user => user.id !== userId));
+                setReservations(currentReservations => currentReservations.filter(reservations => reservations.id !== id));
 
             } catch (err) {
                 alert(err instanceof Error ? err.message : 'Un error desconocido ha ocurrido al eliminar.');
@@ -147,51 +114,71 @@ export function UsersDashboard() {
     };
 
     // Función para editar un usuario (por ahora solamente muestra un alert)
-    const handleEditUser = (userNombre: string) => {
-        alert(`Funcionalidad de edición del usuario ${userNombre} aún no implementada.`);
+    const handleEditReservation = (reservationId: string) => {
+        alert(`Funcionalidad de edición de la reserva ${reservationId} aún no implementada.`);
     };
 
-    const filteredUsers = useMemo(() => {
-        return users
-            .filter(u => {
+    const buscarNombreUsuario = async (personaId: string) => {
+        try {
+            const response = await fetch(`http://localhost:8081/api/personas/${personaId}`);
+            if (!response.ok) {
+                throw new Error('Error al cargar el número de reservas');
+            }
+            const data = await response.json();
+            setNombres(prev => ({ ...prev, [personaId]: data.nombre }));
+            console.log(`Nombre de usuario para ID ${personaId}: ${data.nombre}`);
+        } catch (err) {
+        }
+    };
+
+    useEffect(() => {
+            // Recorremos la lista de usuarios que acabamos de descargar
+            reservations.forEach(r => {
+                // Para evitar llamadas infinitas o repetidas, comprobamos si ya lo hemos buscado
+                if (nombres[r.id] === undefined) {
+                    buscarNombreUsuario(r.reservadaPorId);
+                }
+            });
+        }, [reservations]);
+
+    const filteredReservations = useMemo(() => {
+        return reservations
+            .filter(r => {
                 if (searchTerm) {
                     const s = searchTerm.toLowerCase();
                     if (
-                        !u.nombre.toLowerCase().includes(s) &&
-                        !u.email.toLowerCase().includes(s) &&
-                        !u.id.toLowerCase().includes(s) &&
-                        !u.departamentoNombre?.toLowerCase().includes(s)
+                        !r.reservadaPorId.toLowerCase().includes(s)
                     ) return false;
                 }
                 // Filtro por rol, comprobando si alguno de los roles del usuario coincide
-                if (roleFilter && !u.roles.includes(roleFilter)) return false;
+                if (estadoFilter && !r.estado.includes(estadoFilter)) return false;
                 return true;
             })
-            .sort((a, b) => a.nombre.localeCompare(b.nombre));
-    }, [searchTerm, roleFilter, users]);
+            .sort((a, b) => new Date(b.fechaInicio).getTime() - new Date(a.fechaInicio).getTime());
+    }, [searchTerm, estadoFilter, reservations]);
 
-    const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
-    const paginatedUsers = filteredUsers.slice(
+
+    const totalPages = Math.ceil(filteredReservations.length / ITEMS_PER_PAGE);
+    const paginatedReservations = filteredReservations.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE
     );
 
     const stats = {
-        total: users.length,
+        total: reservations.length,
     };
 
     const roleDistribution = useMemo(() => {
         const dist: Record<string, number> = {};
-        users.forEach(u => {
-            u.roles.forEach(role => {
-                dist[role] = (dist[role] || 0) + 1;
-            });
+        reservations.forEach(r => {
+            const estadoActual = r.estado;
+            dist[estadoActual] = (dist[estadoActual] || 0) + 1;
         });
         return dist;
-    }, [users]);
+    }, [reservations]);
 
     if (loading) {
-        return <div className="flex justify-center items-center h-screen">Cargando usuarios...</div>;
+        return <div className="flex justify-center items-center h-screen">Cargando reservas...</div>;
     }
 
     if (error) {
@@ -203,7 +190,7 @@ export function UsersDashboard() {
             <div className="max-w-7xl mx-auto px-8 py-6">
                 {/* Título */}
                 <h2 className="font-serif-display mb-6" style={{ fontSize: '24px', color: '#1B2A4A' }}>
-                    Dashboard de Usuarios
+                    Dashboard de Reservas
                 </h2>
 
                 <div className="grid grid-cols-4 gap-4 mb-6">
@@ -212,15 +199,15 @@ export function UsersDashboard() {
                         <div className="flex items-start justify-between">
                             <div>
                                 <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                                    Usuarios Totales
+                                    Reservas Totales
                                 </p>
                                 <p className="font-serif-display mt-1" style={{ fontSize: '36px', color: '#fff', lineHeight: 1.1 }}>
                                     {stats.total}
                                 </p>
                             </div>
-                            <Users className="size-5" style={{ color: 'rgba(255,255,255,0.4)' }} />
+                            <BookMarked className="size-5" style={{ color: 'rgba(255,255,255,0.4)' }} />
                         </div>
-                        {/* Role mini-bars */}
+                        {/* Estado mini-bars */}
                         <div className="flex items-end gap-[3px] mt-2" style={{ height: '20px' }}>
                             {Object.entries(roleDistribution).map(([role, count]) => (
                                 <div
@@ -229,7 +216,7 @@ export function UsersDashboard() {
                                     style={{
                                         width: '12px',
                                         height: `${Math.max((count / Math.max(...Object.values(roleDistribution), 1)) * 20, 2)}px`,
-                                        backgroundColor: roleColors[role] || '#8A8F9E',
+                                        backgroundColor: estadoColors[role] || '#8A8F9E',
                                         opacity: 0.7,
                                     }}
                                 />
@@ -247,7 +234,7 @@ export function UsersDashboard() {
                         <Search className="size-4 mr-2.5 flex-shrink-0" style={{ color: '#8A8F9E' }} />
                         <input
                             type="text"
-                            placeholder="Buscar por nombre, email o ID..."
+                            placeholder="Buscar por asistentes, usuario"
                             value={searchTerm}
                             onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                             className="w-full bg-transparent outline-none"
@@ -257,14 +244,14 @@ export function UsersDashboard() {
 
                     <div className="px-3 py-2.5" style={{ borderLeft: '1px solid #E2DDD6' }}>
                         <select
-                            value={roleFilter}
-                            onChange={e => { setRoleFilter(e.target.value); setCurrentPage(1); }}
+                            value={estadoFilter}
+                            onChange={e => { setEstadoFilter(e.target.value); setCurrentPage(1); }}
                             className="bg-transparent outline-none cursor-pointer"
                             style={{ fontSize: '13px', fontFamily: "'DM Sans', sans-serif", color: '#1B2A4A', minWidth: '160px' }}
                         >
-                            <option value="">Todos los roles</option>
-                            {Object.keys(roleLabels).map(roleKey => (
-                                <option key={roleKey} value={roleKey}>{roleLabels[roleKey]}</option>
+                            <option value="">Todos los estados</option>
+                            {Object.keys(estadoLabels).map(roleKey => (
+                                <option key={roleKey} value={roleKey}>{estadoLabels[roleKey]}</option>
                             ))}
                         </select>
                     </div>
@@ -279,7 +266,7 @@ export function UsersDashboard() {
                         <table className="w-full">
                             <thead>
                                 <tr style={{ backgroundColor: '#F0EDE6' }}>
-                                    {['Usuario', 'Email', 'Rol', 'Departamento', 'Reservas', 'Acciones'].map(header => (
+                                    {['Usuario', 'Espacios', 'Asistentes', 'Estado', 'Periodo', 'Acciones'].map(header => (
                                         <th
                                             key={header}
                                             className="px-5 py-3 text-left"
@@ -298,68 +285,57 @@ export function UsersDashboard() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {paginatedUsers.map(user => (
+                                {paginatedReservations.map(reservation => (
                                     <tr
-                                        key={user.id}
+                                        key={reservation.id}
                                         className="transition-colors"
                                         style={{ borderBottom: '1px solid #EDE9E3' }}
                                         onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F7F4EF')}
                                         onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                                     >
-                                        {/* Usuario */}
+                                        {/* ID Usuario */}
                                         <td className="px-5 py-3.5">
-                                            <div className="flex items-center gap-2.5">
-                                                <UserAvatar name={user.nombre} role={user.roles.join(', ')} />
+                                            <div className="flex items-center gap-1.5">
                                                 <div>
-                                                    <span style={{ fontSize: '14px', color: '#1B2A4A', fontWeight: 500, display: 'block' }}>
-                                                        {user.nombre}
+                                                    <span style={{ fontSize: '14px', color: '#6B6560', fontWeight: 500, display: 'block' }}>
+                                                        {nombres[reservation.reservadaPorId] || reservation.reservadaPorId}
                                                     </span>
                                                 </div>
                                             </div>
                                         </td>
 
-                                        {/* Email */}
+                                        {/* Espacios */}
                                         <td className="px-5 py-3.5">
                                             <div className="flex items-center gap-1.5">
-                                                <Mail className="size-3 flex-shrink-0" style={{ color: '#C8C3BB' }} />
-                                                <span style={{ fontSize: '13px', color: '#1B2A4A' }}>
-                                                    {user.email}
+                                                <span style={{ fontSize: '13px', color: '#6B6560' }}>
+                                                    {reservation.espacioIds?.join(', ') || 'Sin espacios asignados'}
                                                 </span>
                                             </div>
                                         </td>
 
                                         {/* Rol */}
                                         <td className="px-5 py-3.5">
-                                            <div className="flex flex-wrap gap-1">
-                                                {user.roles.map(role => (
-                                                    <span
-                                                        key={role}
-                                                        className="inline-flex items-center px-2.5 py-1 rounded-full"
-                                                        style={{
-                                                            backgroundColor: `${roleColors[role] || '#8A8F9E'}15`,
-                                                            color: roleColors[role] || '#8A8F9E',
-                                                            fontSize: '11px',
-                                                            fontWeight: 500,
-                                                        }}
-                                                    >
-                                                        <div
-                                                            className="size-1.5 rounded-full mr-1.5 flex-shrink-0"
-                                                            style={{ backgroundColor: roleColors[role] || '#8A8F9E' }}
-                                                        />
-                                                        {roleLabels[role] || role}
-                                                    </span>
-                                                ))}
-                                            </div>
+                                            <span style={{ fontSize: '12px', color: '#6B6560' }} className="truncate">
+                                                {reservation.numeroAsistentes}
+                                            </span>
                                         </td>
 
-                                        {/* Departmento */}
+                                        {/* Estado */}
                                         <td className="px-5 py-3.5">
                                             <span style={{ fontSize: '12px', color: '#6B6560' }} className="truncate">
-                                                {user.departamentoNombre ?? 'N/A'}
+                                                {reservation.estado}
+                                            </span>
+                                        </td>
+
+                                        {/* Fechas */}
+                                        <td className="px-5 py-3.5">
+                                            <span style={{ fontSize: '12px', color: '#6B6560' }} className="truncate">
+                                                {reservation.fechaInicio.split(' ')[0].split('T')[0]} - {reservation.fechaFin.split(' ')[0].split('T')[0]}
                                             </span>
                                         </td>
 
                                         {/* Reservas */}
+                                        {/*
                                         <td className="px-5 py-3.5">
                                             <div className="flex items-center gap-1.5">
                                                 <BookOpen className="size-3" style={{ color: '#C8C3BB' }} />
@@ -367,16 +343,17 @@ export function UsersDashboard() {
                                                     className="font-mono"
                                                     style={{ fontSize: '13px', color: '#1B2A4A', fontFamily: "'JetBrains Mono', monospace" }}
                                                 >
-                                                    {reservasPorUsuario[user.id] !== undefined ? reservasPorUsuario[user.id] : '...'}
+                                                    0
                                                 </span>
                                             </div>
                                         </td>
+                                        */}
 
                                         {/* Acciones sobre el usuario (por el momento sin funcionalidad) */}
                                         <td className="px-5 py-3.5">
                                             <div className="flex items-center gap-1">
                                                 <button
-                                                    onClick={() => handleEditUser(user.nombre)}
+                                                    onClick={() => handleEditReservation(reservation.id)}
                                                     className="p-2 rounded-lg transition-all"
                                                     title="Editar usuario"
                                                     onMouseEnter={e => {
@@ -392,7 +369,7 @@ export function UsersDashboard() {
                                                     />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDeleteUser(user.id)}
+                                                    onClick={() => handleDeleteReservation(reservation.id)}
                                                     className="p-2 rounded-lg transition-all"
                                                     title="Eliminar usuario"
                                                     onMouseEnter={e => {
@@ -416,25 +393,25 @@ export function UsersDashboard() {
                     </div>
 
                     {/* Empty state */}
-                    {filteredUsers.length === 0 && (
+                    {filteredReservations.length === 0 && (
                         <div className="text-center py-16">
-                            <Users className="size-10 mx-auto mb-3" style={{ color: '#C8C3BB' }} />
+                            <BookMarked className="size-10 mx-auto mb-3" style={{ color: '#C8C3BB' }} />
                             <p style={{ fontSize: '14px', color: '#8A8F9E' }}>
-                                No se encontraron usuarios
+                                No se encontraron reservas
                             </p>
                         </div>
                     )}
 
                     {/* Paginación */}
-                    {filteredUsers.length > 0 && (
+                    {filteredReservations.length > 0 && (
                         <div
                             className="flex items-center justify-between px-5 py-3"
                             style={{ borderTop: '1px solid #EDE9E3' }}
                         >
                             <span style={{ fontSize: '12px', color: '#8A8F9E' }}>
                                 Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
-                                {Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)} de{' '}
-                                {filteredUsers.length} usuarios
+                                {Math.min(currentPage * ITEMS_PER_PAGE, filteredReservations.length)} de{' '}
+                                {filteredReservations.length} usuarios
                             </span>
                             <div className="flex items-center gap-1">
                                 <button

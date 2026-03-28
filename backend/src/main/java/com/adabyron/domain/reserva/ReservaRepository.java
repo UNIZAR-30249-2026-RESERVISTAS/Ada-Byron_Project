@@ -20,6 +20,9 @@ public interface ReservaRepository {
     // Para obtener el historial completo de reservas de una persona, independientemente de su estado actual.
     List<Reserva> findByReservadaPorId(UUID personaId);
 
+    //Para mostrar en le dashboard el número de reservas activas de cada usuario
+    List<Reserva> findReservasActivasPorId(UUID personaId, LocalDateTime ahora);
+
     // O4 - El gerente puede listar las reservas potencialmente inválidas para decidir si las confirma o cancela
     List<Reserva> findPotencialmenteInvalidas(LocalDateTime ahora);
 

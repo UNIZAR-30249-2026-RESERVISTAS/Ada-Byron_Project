@@ -107,6 +107,11 @@ public class ReservaService {
     public List<Reserva> listarPorPersona(UUID personaId) {
         return reservaRepository.findByReservadaPorId(personaId);
     }
+
+    @Transactional(readOnly = true)
+    public List<Reserva> listarActivasPorPersona(UUID personaId) {
+        return reservaRepository.findReservasActivasPorId(personaId, LocalDateTime.now());
+    }
  
     /**
      * O4 — El gerente consulta las reservas potencialmente inválidas.
