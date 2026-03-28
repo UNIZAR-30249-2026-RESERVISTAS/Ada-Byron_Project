@@ -6,12 +6,29 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 /**
- * VALUE OBJECT — Intervalo temporal de una reserva.
+ * VALUE OBJECT — Intervalo temporal de una reserva (capa de dominio).
+ *
+ * REPRESENTACIÓN TEMPORAL:
+ * Utiliza LocalDateTime inicio + LocalDateTime fin para representar un intervalo de tiempo
+ * completo. Esta representación permite:
+ *   - Encapsular las reglas de negocio relacionadas con el tiempo
+ *   - Validar invariantes (inicio < fin, mismo día)
+ *   - Proporcionar métodos de dominio: seSolapaCon(), estaContenidoEn(), duracion()
+ *   - Ser inmutable y autodescriptivo (Value Object según DDD)
+ *
+ * El API externo (CrearReservaDTO) usa fecha + hora + duración por conveniencia del usuario,
+ * y se convierte a IntervaloTemporal mediante el factory method of().
+ *
+ * La capa de persistencia (ReservaJpaEntity) descompone este Value Object en dos columnas
+ * separadas (fechaInicio, fechaFin) por limitaciones de JPA y para facilitar consultas SQL.
  *
  * Invariantes:
  *   - inicio debe ser antes que fin
  *   - inicio y fin deben estar en el mismo día (REQ-E2)
  *   - el intervalo no puede ser de duración cero
+ *
+ * Ver CrearReservaDTO para la representación en el API.
+ * Ver ReservaJpaEntity para la representación en base de datos.
  */
 public record IntervaloTemporal(LocalDateTime inicio, LocalDateTime fin) {
 
@@ -56,7 +73,8 @@ public record IntervaloTemporal(LocalDateTime inicio, LocalDateTime fin) {
         return fin;
     }
 
-    /** ¿Este intervalo se encuentra dentro del horario disponible del espacio? — REQ-C5, C6 */
+    /** ¿Este intervalo se encuentra dentro del horario disponible del edificio? — REQ-C5 (si el espacio no tiene horario específico, usaremos el horario del edificio) ,
+     *  ¿Este intervalo se encuentra dentro del horario disponible del espacio? — REQ-C6 (si el espacio tiene horario específico) */
     public boolean estaContenidoEn(LocalDateTime apertura, LocalDateTime cierre) {
         return !fechaInicio().isBefore(apertura) && !fechaFin().isAfter(cierre);
     }

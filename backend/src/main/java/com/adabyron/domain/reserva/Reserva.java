@@ -2,6 +2,7 @@ package com.adabyron.domain.reserva;
 
 import com.adabyron.domain.espacio.EspacioId;
 import com.adabyron.domain.persona.PersonaId;
+import com.adabyron.domain.persona.Rol;
 import java.util.*;
 
 
@@ -13,6 +14,11 @@ import java.util.*;
  *
  * La creación e hidratación de instancias se delega a ReservaFactory,
  * siguiendo el mismo patrón que PersonaFactory en el dominio de persona.
+ *
+ * REPRESENTACIÓN TEMPORAL:
+ * Utiliza IntervaloTemporal (Value Object) para encapsular las fechas de inicio y fin.
+ * Esto permite validar invariantes y proporcionar métodos de dominio como seSolapaCon().
+ * Ver IntervaloTemporal para detalles sobre cómo se representa en otras capas.
  *
  * INVARIANTES:
  *   INV-1: Debe tener al menos un espacio.
@@ -113,8 +119,15 @@ public class Reserva {
     /**
      * POTENCIALMENTE_INVALIDA → CONFIRMADA (O4)
      * El gerente decide que la reserva sigue siendo válida.
+     *
+     * @param rolesDelSolicitante Roles de la persona que intenta revalidar la reserva
+     * @throws com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException si el solicitante no es gerente
      */
-    public void revalidar() {
+    public void revalidar(Set<Rol> rolesDelSolicitante) {
+        if (!rolesDelSolicitante.contains(Rol.GERENTE))
+            throw new com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException(
+                "Solo el gerente puede revalidar una reserva");
+
         if (estado != EstadoReserva.POTENCIALMENTE_INVALIDA)
             throw new com.adabyron.domain.reserva.exception.TransicionEstadoInvalidaException(
                 estado, EstadoReserva.CONFIRMADA);
@@ -124,10 +137,19 @@ public class Reserva {
 
     /**
      * CONFIRMADA | POTENCIALMENTE_INVALIDA → CANCELADA (REQ-H2, REQ-I2)
-     * El gerente elimina la reserva.
+     * Puede ser cancelada por:
+     * - El gerente (puede cancelar cualquier reserva)
+     * - El usuario que creó la reserva (solo puede cancelar las suyas)
      */
-    public void cancelar(String motivo) {
-        if (!estado.esModificable())
+    public void cancelar(Set<Rol> rolesDelSolicitante, PersonaId solicitanteId, String motivo) {
+        boolean esGerente = rolesDelSolicitante.contains(Rol.GERENTE);
+        boolean esCreador = this.reservadaPorId.equals(solicitanteId.valor());
+
+        if (!esGerente && !esCreador) // Solo el gerente o el creador de la reserva pueden cancelarla
+            throw new com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException(
+                "Solo el gerente o el creador de la reserva pueden cancelarla");
+
+        if (!estado.esModificable()) // Solo se pueden cancelar reservas que estén en estado CONFIRMADA o POTENCIALMENTE_INVALIDA
             throw new com.adabyron.domain.reserva.exception.TransicionEstadoInvalidaException(
                 estado, EstadoReserva.CANCELADA);
         this.estado = EstadoReserva.CANCELADA;

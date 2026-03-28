@@ -11,13 +11,13 @@ public interface ReservaRepository {
 
     Optional<Reserva> findById(UUID id);
 
-    // REQ-H1 Gerente Consultan todas las reservas cuya hora de finalización es posterior al momento actual.
+    // REQ-H1 Gerente Consultan todas las reservas cuya hora de finalización es posterior al momento actual, y su estado es CONFIRMADA O POTENCIALMENTE_INVÁLIDA.
     List<Reserva> findReservasActivas(LocalDateTime ahora);
 
     // REQ-F7 Para validar solapamientos
     List<Reserva> findActivasByEspacioId(String espacioId);
 
-    // Para notificar al usuario cuando se cancela su reserva (REQ-I2)
+    // Para obtener el historial completo de reservas de una persona, independientemente de su estado actual.
     List<Reserva> findByReservadaPorId(UUID personaId);
 
     //Para mostrar en le dashboard el número de reservas activas de cada usuario

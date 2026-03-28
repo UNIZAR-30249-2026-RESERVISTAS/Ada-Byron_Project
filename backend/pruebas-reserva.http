@@ -2,10 +2,8 @@
 @baseUrl = http://localhost:8081/api/reservas
 @contentType = application/json
 
-### ─────────────────────────────────────────
 ### 1. Crear reserva válida (estudiante → sala común), DEBE SER CONFIRMADA
-### Primero necesitas un UUID de persona existente en tu BD
-### ─────────────────────────────────────────
+### Primero necesitas un UUID de persona existente en tu BD (FUNCIONA BIEN)
 ### El ID de un espacio común en nuestra BD, ID de un estudiante
 POST {{baseUrl}}
 Content-Type: {{contentType}}
@@ -21,10 +19,8 @@ Content-Type: {{contentType}}
     "detallesAdicionales": null
 }
 
-### ─────────────────────────────────────────
-### 2. Crear reserva que debe ser RECHAZADA
+### 2. Crear reserva que debe ser RECHAZADA (FUNCIONA BIEN)
 ###    (estudiante intentando reservar un DESPACHO, no es reservable)
-### ─────────────────────────────────────────
 POST {{baseUrl}}
 Content-Type: {{contentType}}
 
@@ -39,10 +35,8 @@ Content-Type: {{contentType}}
     "detallesAdicionales": null
 }
 
-### ─────────────────────────────────────────
-###  Crear reserva que debe ser RECHAZADA
+###  Crear reserva que debe ser RECHAZADA (FUNCIONA BIEN)
 ###    (estudiante intentando reservar un AULA )
-### ─────────────────────────────────────────
 POST {{baseUrl}}
 Content-Type: {{contentType}}
 
@@ -56,11 +50,9 @@ Content-Type: {{contentType}}
     "duracionMinutos": 90,
     "detallesAdicionales": null
 }
-
-### ─────────────────────────────────────────
-###  Crear reserva que debe ser CONFIRMADA
+ 
+###  Crear reserva que debe ser CONFIRMADA (FUNCIONA BIEN)
 ###    (docente-investigador intentando reservar un LABORATORIO )
-### ─────────────────────────────────────────
 POST {{baseUrl}}
 Content-Type: {{contentType}}
 
@@ -75,33 +67,40 @@ Content-Type: {{contentType}}
     "detallesAdicionales": "Reserva para experimento"
 }
 
-### ─────────────────────────────────────────
 ### 3. Listar reservas activas (REQ-H1) (FUNCIONA BIEN)
-### ─────────────────────────────────────────
 GET {{baseUrl}}
 
-### ─────────────────────────────────────────
 ### 4. Buscar reserva por ID (FUNCIONA BIEN)
 ###    (sustituye por un UUID real tras crear una)
-### ─────────────────────────────────────────
 GET {{baseUrl}}/2d77ebfa-3325-4a7a-a3aa-960a8774feb8
 
-### ─────────────────────────────────────────
 ### 5. Listar reservas de una persona (FUNCIONA BIEN)
-### ─────────────────────────────────────────
 GET {{baseUrl}}/persona/8124f18a-b69f-428b-b235-ddfb4979ace9
 
-### ─────────────────────────────────────────
 ### 6. Listar potencialmente inválidas (O4)
-### ─────────────────────────────────────────
 GET {{baseUrl}}/potencialmente-invalidas
 
-### ─────────────────────────────────────────
-### 7. Cancelar reserva (REQ-H2) (FUNCIONA BIEN)
-### ─────────────────────────────────────────
-DELETE {{baseUrl}}/c2634c60-182e-4fb3-b55d-67e84721ed15?motivo=Cancelada por el gerente
+### 7a. Cancelar reserva como GERENTE (puede cancelar cualquier reserva) (FUNCIONA BIEN)
+###     Necesitamos el UUID de un usuario con rol GERENTE
+###     Esto es un SOFT DELETE - la reserva cambia a estado CANCELADA, no se elimina de la BD
+DELETE {{baseUrl}}/c2634c60-182e-4fb3-b55d-67e84721ed15?solicitanteId=UUID-DEL-GERENTE&motivo=Cancelada por el gerente
 
-### ─────────────────────────────────────────
-### 8. Revalidar reserva potencialmente inválida (O4)
-### ─────────────────────────────────────────
-PUT {{baseUrl}}/UUID-DE-RESERVA/revalidar
+### 7b. Cancelar reserva como USUARIO NORMAL (solo puede cancelar sus propias reservas) (FUNCIONA BIEN)
+###     El solicitanteId debe coincidir con el reservadaPorId de la reserva
+###     Esto es un SOFT DELETE - la reserva cambia a estado CANCELADA, no se elimina de la BD
+DELETE {{baseUrl}}/5bad7c4d-fc9a-490b-b563-72306b441280?solicitanteId=73f0901c-813d-47c1-bcca-76673c63a605&motivo=Ya no necesito el espacio
+
+### 7c. Eliminar PERMANENTEMENTE una reserva como GERENTE (FUNCIONA BIEN)
+###     IMPORTANTE: Esto es IRREVERSIBLE (hard delete)
+###     La reserva se elimina completamente de la BD
+DELETE {{baseUrl}}/UUID-DE-RESERVA/permanente?solicitanteId=UUID-DEL-GERENTE
+
+### 7d. Eliminar PERMANENTEMENTE una reserva propia (FUNCIONA BIEN)
+###     IMPORTANTE: Esto es IRREVERSIBLE (hard delete)
+###     El solicitanteId debe coincidir con el reservadaPorId de la reserva
+DELETE {{baseUrl}}/UUID-DE-RESERVA/permanente?solicitanteId=73f0901c-813d-47c1-bcca-76673c63a605
+
+
+### 8. Revalidar reserva potencialmente inválida (O4) - Solo GERENTE (FUNCIONA BIEN)
+###    Necesitamos el UUID de un usuario con rol GERENTE
+PUT {{baseUrl}}/UUID-DE-RESERVA/revalidar?gerenteId=UUID-DEL-GERENTE
