@@ -3,6 +3,8 @@ package com.adabyron.application.reserva;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import com.adabyron.domain.persona.exception.PersonaNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -100,7 +102,7 @@ public class ReservaService {
     @Transactional(readOnly = true)
     public Reserva buscarPorId(UUID id) {
         return reservaRepository.findById(id)
-            .orElseThrow(() -> new ReservaNotFoundException("Reserva no encontrada: " + id));
+            .orElseThrow(() -> new ReservaNotFoundException(id));
     }
  
     @Transactional(readOnly = true)
@@ -128,8 +130,7 @@ public class ReservaService {
     public Reserva cancelarReserva(UUID id, UUID solicitanteId, String motivo) {
         // Validamos que la persona existe y obtener sus roles
         var persona = personaRepository.findById(solicitanteId)
-            .orElseThrow(() -> new IllegalArgumentException(
-                "Persona no encontrada: " + solicitanteId));
+            .orElseThrow(() -> new PersonaNotFoundException(solicitanteId));
 
         Reserva reserva = buscarPorId(id);
         reserva.cancelar(persona.getRoles(), persona.getPersonaId(), motivo != null ? motivo : "Cancelada");
@@ -166,7 +167,7 @@ public class ReservaService {
 
         // Buscamos la reserva
         Reserva reserva = reservaRepository.findById(id)
-            .orElseThrow(() -> new ReservaNotFoundException("Reserva no encontrada: " + id));
+            .orElseThrow(() -> new ReservaNotFoundException(id));
 
         // Validamos permisos (misma lógica que cancelar)
         boolean esGerente = persona.getRoles().contains(com.adabyron.domain.persona.Rol.GERENTE);
