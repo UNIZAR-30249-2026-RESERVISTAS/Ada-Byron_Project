@@ -91,10 +91,10 @@ export function ReservationDashboard() {
     }, []);
 
     // Función para eliminar una reserva
-    const handleDeleteReservation = async (id: string) => {
+    const handleDeleteReservation = async (id: string, solicitanteId: string) => {
         if (window.confirm('¿Estás seguro de que quieres eliminar esta reserva?')) {
             try {
-                const response = await fetch(`http://localhost:8081/api/reservas/eliminar/${id}`, {
+                const response = await fetch(`http://localhost:8081/api/reservas/${id}/permanente?solicitanteId=${solicitanteId}`, {
                     method: 'DELETE',
                 });
 
@@ -369,7 +369,7 @@ export function ReservationDashboard() {
                                                     />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDeleteReservation(reservation.id)}
+                                                    onClick={() => handleDeleteReservation(reservation.id, reservation.reservadaPorId)}
                                                     className="p-2 rounded-lg transition-all"
                                                     title="Eliminar usuario"
                                                     onMouseEnter={e => {
