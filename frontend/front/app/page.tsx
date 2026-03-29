@@ -1,10 +1,21 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useActionState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { LogOut, User, Users, BookMarked } from 'lucide-react';
 import { getCurrentUser, logoutUser, checkSession } from '../src/services/auth';
+import { reservarEspacio } from './reservas/actions';
 
+
+interface ReservaData {
+  espaciosIds: string[];
+  tipoUso: string;
+  numeroAsistentes: number;
+  fecha: string;
+  horaInicio: string;
+  duracionMinutos: number;
+  detallesAdicionales: string;
+}
 
 // Importamos el mapa indicando que NO se renderice en el servidor (ssr: false)
 const MapWithNoSSR = dynamic(() => import('./MapaProxy'), {
@@ -20,6 +31,17 @@ export default function PaginaPrincipal() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [filterId, setFilterId] = useState('');
   const [filterOcupantes, setFilterOcupantes] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState<ReservaData>({
+    espaciosIds: [],
+    tipoUso: '',
+    numeroAsistentes: 0,
+    fecha: '',
+    horaInicio: '',
+    duracionMinutos: 0,
+    detallesAdicionales: ''
+  });
+  const [state, formAction, isPending] = useActionState(reservarEspacio, null);
 
   const user = getCurrentUser();
 
@@ -56,6 +78,26 @@ export default function PaginaPrincipal() {
     { key: 'sala común', label: 'Sala Común', color: { color: 'red', weight: 1, fillColor: '#ef5757', fillOpacity: 0.8 } },
   ];
 
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+
+    if (name === 'espaciosIds') {
+      // Aquí le decimos que 'id' es un string
+      const idsArray = value.split(',').map((id: string) => id.trim()).filter((id: string) => id !== "");
+      setModalContent(prev => ({ ...prev, [name]: idsArray }));
+    } else {
+      // Para los números (asistentes y duración), es buena idea convertirlos
+      if (name === 'numeroAsistentes' || name === 'duracionMinutos') {
+        setModalContent(prev => ({ ...prev, [name]: Number(value) }));
+      } else {
+        setModalContent(prev => ({ ...prev, [name]: value }));
+      }
+    }
+  };
 
 
   useEffect(() => {
@@ -286,9 +328,138 @@ export default function PaginaPrincipal() {
               }}
             />
           </div>
+          {user && (
+            <div className="pl-2 mt-4">
+              <button
+                onClick={toggleModal}
+                className='w-1/2 text-white py-2 rounded-lg font-mediu transtion-colors' style={{ backgroundColor: '#1B2A4A' }}>
+                Hacer Reserva
+              </button>
+            </div>
+          )}
         </div>
-
       </aside>
+
+      {isModalOpen && user && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#EEEBE4' }}>
+            <div className="flex justify-between items-center mb-5 border-b pb-3">
+              <h2 className="text-xl font-bold text-[#1B2A4A]">Datos Reserva</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+
+            <form className="space-y-4" action={formAction}>
+
+              {/* Espacios IDs (Vector) */}
+              <div>
+                <label className="block text-[11px] text-[#6B6560] uppercase mb-1">IDs de Espacios (separados por coma)</label>
+                <input
+                  type="text"
+                  name="espaciosIds"
+                  placeholder="101, 102..."
+                  value={modalContent.espaciosIds.join(', ')}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md focus:ring-2 focus:ring-[#3B6FD4] outline-none text-[13px] placeholder-gray-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Tipo de Uso */}
+                <div>
+                  <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Tipo de Uso</label>
+                  <select
+                    name="tipoUso"
+                    value={modalContent.tipoUso}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px]"
+                  >
+                    <option value="Docencia">Clase</option>
+                    <option value="Investigación">Reunión</option>
+                    <option value="Gestión">Examen</option>
+                    <option value="Gestión">Otro</option>
+                  </select>
+                </div>
+                {/* Número Asistentes */}
+                <div>
+                  <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Asistentes</label>
+                  <input
+                    type="number"
+                    name="numeroAsistentes"
+                    value={modalContent.numeroAsistentes}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Fecha */}
+                <div>
+                  <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Fecha</label>
+                  <input
+                    type="date"
+                    name="fecha"
+                    value={modalContent.fecha}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400"
+                  />
+                </div>
+                {/* Hora Inicio */}
+                <div>
+                  <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Hora Inicio</label>
+                  <input
+                    type="time"
+                    name="horaInicio"
+                    value={modalContent.horaInicio}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400"
+                  />
+                </div>
+              </div>
+
+              {/* Duración */}
+              <div>
+                <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Duración (minutos)</label>
+                <input
+                  type="number"
+                  name="duracionMinutos"
+                  value={modalContent.duracionMinutos}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400"
+                />
+              </div>
+
+              {/* Detalles Adicionales */}
+              <div>
+                <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Mensaje Opcional</label>
+                <textarea
+                  name="detallesAdicionales"
+                  value={modalContent.detallesAdicionales}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] resize-none placeholder-gray-400"
+                  placeholder="Indique detalles adicionales"
+                ></textarea>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-2 text-[13px] text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Descartar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 text-[13px] text-white bg-[#1B2A4A] rounded-lg hover:bg-[#3B6FD4] transition-all"
+                >
+                  Confirmar Reserva
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div
         className="flex flex-col py-4 px-2 flex-shrink-0"
