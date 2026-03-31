@@ -62,6 +62,8 @@ public class ReservaController {
     })
     @PostMapping
     public ResponseEntity<ReservaDTO> crear(@RequestBody CrearReservaDTO dto) {
+        //System.out.println("DTO en el crear:");
+        //System.out.println(dto);
         var reserva = reservaService.crearReserva(dto);
         return ResponseEntity.status(HttpStatus.CREATED)
                              .body(ReservaDTO.fromEntity(reserva));

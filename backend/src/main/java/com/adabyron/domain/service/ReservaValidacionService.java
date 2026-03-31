@@ -37,15 +37,15 @@ public class ReservaValidacionService {
         // Esta validación aplica a todos, incluyendo gerentes
         validarHorarioDisponible(espacio, intervalo);
 
+        // El espacio debe ser reservable
+        if (!espacio.isReservable())
+            throw new ReservaInvalidaException("El espacio " + espacio.getId().id() + " no es reservable");
+
         // REQ-F8 — el gerente puede reservar cualquier espacio reservable
         if (persona.tieneRol(Rol.GERENTE)) {
             validarDisponibilidad(espacio, intervalo, reservasExist);
             return;
         }
-
-        // El espacio debe ser reservable
-        if (!espacio.isReservable())
-            throw new ReservaInvalidaException("El espacio " + espacio.getId().id() + " no es reservable");
 
         // Obtener la categoría de reserva del espacio
         CategoriaReserva categoria = obtenerCategoria(espacio);

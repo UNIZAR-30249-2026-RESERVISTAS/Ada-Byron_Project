@@ -35,7 +35,7 @@ export default function MapaProxy({ data, floorId }: { data: any, floorId: strin
 
             layer.on('click', async () => {
 
-              const idDominio = feature.properties.espacio_id;  
+              const idDominio = feature.properties.espacio_id;
 
               if (!idDominio) {
                 layer.setPopupContent('<div style="padding: 5px;">Espacio sin ID asignado</div>');
@@ -74,10 +74,10 @@ export default function MapaProxy({ data, floorId }: { data: any, floorId: strin
               } catch (error) {
                 console.error("Error al obtener los datos del espacio:", error);
                 layer.setPopupContent(`
-          <div style="color: red; padding: 5px;">
-            Datos de negocio no disponibles para ${idDominio}.
-          </div>
-        `);
+                  <div style="color: red; padding: 5px;">
+                    Datos de negocio no disponibles para ${idDominio}.
+                  </div>
+                `);
               }
             });
           }}
