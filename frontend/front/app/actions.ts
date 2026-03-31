@@ -44,5 +44,8 @@ export async function reservarEspacio(prevState: any, data: FormData) {
     }
 
     const result = await response.json();
-    return result;
+    return { 
+        success: true, 
+        data: result 
+    };
 }

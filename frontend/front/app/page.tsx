@@ -43,11 +43,25 @@ export default function PaginaPrincipal() {
   });
   const [state, formAction, isPending] = useActionState(reservarEspacio, null);
   const [user, setUser] = useState<any>(null);
+  const [mostrarPopUp, setMostrarPopUp] = useState(false);
+
+  useEffect(() => {
+    if (state?.success) {
+      setMostrarPopUp(true);
+      setIsModalOpen(false);
+
+      const timer = setTimeout(() => {
+        setMostrarPopUp(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [state]);
 
   useEffect(() => {
     setUser(getCurrentUser());
   }, []);
-    
+
 
 
   const handleLogout = async () => {
@@ -515,6 +529,17 @@ export default function PaginaPrincipal() {
       <div className="flex-1 relative">
         <MapWithNoSSR data={geoData} floorId={selectedFloor} />
       </div>
+
+      {mostrarPopUp && (
+        <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-[#1B2A4A] text-white px-8 py-4 rounded-full shadow-2xl flex items-center space-x-3 border-2 border-[#1B2A4A]">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="font-bold">¡Reserva realizada con éxito!</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
