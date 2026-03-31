@@ -1,14 +1,14 @@
 'use client';
-import { useState, useEffect, useActionState } from 'react';
+import { useState, useEffect, useActionState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { LogOut, User, Users, BookMarked } from 'lucide-react';
 import { getCurrentUser, logoutUser, checkSession } from '../src/services/auth';
-import { reservarEspacio } from './reservas/actions';
+import { reservarEspacio } from './actions';
 
 
 interface ReservaData {
-  espaciosIds: string[];
+  espacioIds: string[];
   tipoUso: string;
   numeroAsistentes: number;
   fecha: string;
@@ -33,7 +33,7 @@ export default function PaginaPrincipal() {
   const [filterOcupantes, setFilterOcupantes] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<ReservaData>({
-    espaciosIds: [],
+    espacioIds: [],
     tipoUso: '',
     numeroAsistentes: 0,
     fecha: '',
@@ -42,8 +42,12 @@ export default function PaginaPrincipal() {
     detallesAdicionales: ''
   });
   const [state, formAction, isPending] = useActionState(reservarEspacio, null);
+  const [user, setUser] = useState<any>(null);
 
-  const user = getCurrentUser();
+  useEffect(() => {
+    setUser(getCurrentUser());
+  }, []);
+    
 
 
   const handleLogout = async () => {
@@ -85,7 +89,7 @@ export default function PaginaPrincipal() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
-    if (name === 'espaciosIds') {
+    if (name === 'espacioIds') {
       // Aquí le decimos que 'id' es un string
       const idsArray = value.split(',').map((id: string) => id.trim()).filter((id: string) => id !== "");
       setModalContent(prev => ({ ...prev, [name]: idsArray }));
@@ -350,16 +354,18 @@ export default function PaginaPrincipal() {
 
             <form className="space-y-4" action={formAction}>
 
+              <input type="hidden" name="reservadaPorId" value={user?.id || ''} />
+
               {/* Espacios IDs (Vector) */}
               <div>
                 <label className="block text-[11px] text-[#6B6560] uppercase mb-1">IDs de Espacios (separados por coma)</label>
                 <input
                   type="text"
-                  name="espaciosIds"
+                  name="espacioIds"
                   placeholder="101, 102..."
-                  value={modalContent.espaciosIds.join(', ')}
+                  value={modalContent.espacioIds.join(', ')}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md focus:ring-2 focus:ring-[#3B6FD4] outline-none text-[13px] placeholder-gray-400"
+                  className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md focus:ring-2 focus:ring-[#3B6FD4] outline-none text-[13px] placeholder-gray-400 text-[#1B2A4A]"
                 />
               </div>
 
@@ -371,23 +377,23 @@ export default function PaginaPrincipal() {
                     name="tipoUso"
                     value={modalContent.tipoUso}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px]"
+                    className="w-full px-3 py-2 bg-white border border-[#C8C3BB] rounded-md text-[13px] text-[#1B2A4A]"
                   >
-                    <option value="Docencia">Clase</option>
-                    <option value="Investigación">Reunión</option>
-                    <option value="Gestión">Examen</option>
-                    <option value="Gestión">Otro</option>
+                    <option value="Docencia">Docencia</option>
+                    <option value="Investigación">Investigación</option>
+                    <option value="Gestión">Gestión</option>
+                    <option value="Otro">Otro</option>
                   </select>
                 </div>
                 {/* Número Asistentes */}
                 <div>
                   <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Asistentes</label>
                   <input
-                    type="number"
+                    type="text"
                     name="numeroAsistentes"
                     value={modalContent.numeroAsistentes}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400"
+                    className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
                   />
                 </div>
               </div>
@@ -401,7 +407,7 @@ export default function PaginaPrincipal() {
                     name="fecha"
                     value={modalContent.fecha}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400"
+                    className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
                   />
                 </div>
                 {/* Hora Inicio */}
@@ -412,7 +418,7 @@ export default function PaginaPrincipal() {
                     name="horaInicio"
                     value={modalContent.horaInicio}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400"
+                    className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
                   />
                 </div>
               </div>
@@ -421,11 +427,11 @@ export default function PaginaPrincipal() {
               <div>
                 <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Duración (minutos)</label>
                 <input
-                  type="number"
+                  type="text"
                   name="duracionMinutos"
                   value={modalContent.duracionMinutos}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400"
+                  className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
                 />
               </div>
 
@@ -436,7 +442,7 @@ export default function PaginaPrincipal() {
                   name="detallesAdicionales"
                   value={modalContent.detallesAdicionales}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] resize-none placeholder-gray-400"
+                  className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] resize-none placeholder-gray-400 text-[#1B2A4A]"
                   placeholder="Indique detalles adicionales"
                 ></textarea>
               </div>
@@ -445,7 +451,7 @@ export default function PaginaPrincipal() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2 text-[13px] text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="flex-1 bg-white py-2 text-[13px] text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   Descartar
                 </button>

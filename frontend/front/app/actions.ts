@@ -1,10 +1,18 @@
 'use server'
 
 export async function reservarEspacio(prevState: any, data: FormData) {
-    const espaciosIds = data.getAll('espaciosIds[]') as string[];
+    //console.log('Datos recibidos en reservarEspacio:', data);
+
+    const rawEspacios = data.get('espacioIds') as string || '';
+    const espacioIds = rawEspacios.split(',').map(id => id.trim()).filter(id => id !== '');
 
     const reservadaPorId = data.get('reservadaPorId') as string;
-    const tipoUso = data.get('tipoUso') as string;
+    let tipoUso = data.get('tipoUso') as string;
+    if (tipoUso === 'Docencia') tipoUso = 'DOCENCIA';
+    if (tipoUso === 'Investigación') tipoUso = 'INVESTIGACION';
+    if (tipoUso === 'Gestión') tipoUso = 'GESTION';
+    if (tipoUso === 'Otro') tipoUso = 'OTRO';
+
     const fecha = data.get('fecha') as string;
     const horaInicio = data.get('horaInicio') as string;
     const detallesAdicionales = data.get('detallesAdicionales') as string;
@@ -18,7 +26,7 @@ export async function reservarEspacio(prevState: any, data: FormData) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            espaciosIds,
+            espacioIds,
             reservadaPorId,
             tipoUso,
             numeroAsistentes,
@@ -29,10 +37,10 @@ export async function reservarEspacio(prevState: any, data: FormData) {
         }),
     });
 
+
     if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error del backend:", errorText);
-        throw new Error('Error al realizar la reserva');
+        return { success: false, message: 'Error al realizar la reserva. Por favor, inténtalo de nuevo.' };
+
     }
 
     const result = await response.json();
