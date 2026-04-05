@@ -33,61 +33,66 @@ public class ReservaService {
 
     public Reserva crearReserva(CrearReservaDTO dto) {
 
-    // 1. Validamos existencia de persona
-    var persona = personaRepository.findById(dto.reservadaPorId())
-        .orElseThrow(() -> new IllegalArgumentException(
-            "Persona no encontrada: " + dto.reservadaPorId()));
-
-    // 2. Convertimos String IDs a EspacioId y cargar los Espacio completos
-    List<EspacioId> espacioIds = dto.espacioIds().stream()
-        .map(EspacioId::new)
-        .toList();
-
-    List<Espacio> espacios = espacioIds.stream()
-        .map(id -> espacioRepository.findById(id)
+        // 1. Validamos existencia de persona
+        var persona = personaRepository.findById(dto.reservadaPorId())
             .orElseThrow(() -> new IllegalArgumentException(
-                "Espacio no encontrado: " + id.id())))
-        .toList();
+                "Persona no encontrada: " + dto.reservadaPorId()));
 
-    // 3. Construimos el IntervaloTemporal antes de llamar al factory
-    IntervaloTemporal intervalo = IntervaloTemporal.of(
-        dto.fecha(), dto.horaInicio(), dto.duracionMinutos()
-    );
+        // 2. Convertimos String IDs a EspacioId y cargar los Espacio completos
+        List<EspacioId> espacioIds = dto.espacioIds().stream()
+            .map(EspacioId::new)
+            .toList();
 
-    // 4. Creamos reserva en estado SOLICITADA — factory recibe los tipos correctos
-    var reserva = ReservaFactory.crearNuevaReserva(
-        espacioIds,
-        persona.getPersonaId(),   // PersonaId, no Persona
-        dto.tipoUso(),
-        dto.numeroAsistentes(),
-        intervalo,                // IntervaloTemporal, no fecha/hora sueltos
-        dto.detallesAdicionales()
-    );
+        List<Espacio> espacios = espacioIds.stream()
+            .map(id -> espacioRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(
+                    "Espacio no encontrado: " + id.id())))
+            .toList();
 
-    // 5. Validamos reglas F1-F8 para cada espacio
-    try {
-        for (Espacio espacio : espacios) {
-            List<Reserva> reservasExistentes =
-                reservaRepository.findActivasByEspacioId(espacio.getId().id());
+        // 3. Construimos el IntervaloTemporal antes de llamar al factory
+        IntervaloTemporal intervalo = IntervaloTemporal.of(
+            dto.fecha(), dto.horaInicio(), dto.duracionMinutos()
+        );
 
-            validacionService.validar(
-                persona,
-                espacio,
-                dto.numeroAsistentes(),
-                intervalo,
-                1.0,                        // porcentaje ocupación — corregir cuando tengamos el agregado Edificio
-                reservasExistentes,
-                persona.getDepartamentoId()
-            );
+        // 4. Creamos reserva en estado SOLICITADA — factory recibe los tipos correctos
+        var reserva = ReservaFactory.crearNuevaReserva(
+            espacioIds,
+            persona.getPersonaId(),   // PersonaId, no Persona
+            dto.tipoUso(),
+            dto.numeroAsistentes(),
+            intervalo,                // IntervaloTemporal, no fecha/hora sueltos
+            dto.detallesAdicionales()
+        );
+
+        // 5. Validamos reglas F1-F8 para cada espacio
+        try {
+            for (Espacio espacio : espacios) {
+                List<Reserva> reservasExistentes =
+                    reservaRepository.findActivasByEspacioId(espacio.getId().id());
+
+                var asignacion = espacio.getAsignacion();
+                var deptoEspacio = (asignacion != null && asignacion.esDepartamento())
+                    ? asignacion.getDepartamentoId()
+                    : null;
+
+                validacionService.validar(
+                    persona,
+                    espacio,
+                    dto.numeroAsistentes(),
+                    intervalo,
+                    1.0,
+                    reservasExistentes,
+                    deptoEspacio
+                );
+            }
+            reserva.confirmar();
+
+        } catch (Exception ex) {
+            reserva.rechazar(ex.getMessage());
         }
-        reserva.confirmar();
 
-    } catch (Exception ex) {
-        reserva.rechazar(ex.getMessage());
+        return reservaRepository.save(reserva);
     }
-
-    return reservaRepository.save(reserva);
-}
 
 
     /**

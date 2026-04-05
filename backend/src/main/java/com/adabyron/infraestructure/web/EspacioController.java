@@ -172,4 +172,101 @@ public class EspacioController {
         return EspacioDTO.fromEntity(espacioService.restablecerHorario(id, gerenteId));
     }
 
+	@Operation(
+    summary = "Obtener la asignación actual de un espacio",
+    description = "Devuelve a quién o qué está asignado el espacio: la EINA, un departamento o una o más personas concretas (REQ-C7, REQ-C8)."
+	)
+	@ApiResponses({
+		@ApiResponse(
+			responseCode = "200",
+			description = "Asignación del espacio obtenida correctamente.",
+			content = @Content(
+				mediaType = MediaType.APPLICATION_JSON_VALUE,
+				schema = @Schema(implementation = AsignacionDTO.class)
+			)
+		),
+		@ApiResponse(responseCode = "404", description = "No existe ningún espacio con el ID indicado.", content = @Content)
+	})
+    @GetMapping("/{id}/asignacion")
+	public AsignacionDTO obtenerAsignacion(@PathVariable String id) {
+		return AsignacionDTO.fromDomain(espacioService.obtenerAsignacion(id));
+	}
+
+	@Operation(
+    summary = "Asignar un espacio a la EINA",
+    description = "Asigna el espacio indicado a la EINA. " +
+                  "Aplicable a aulas y salas comunes (REQ-C9)."
+	)
+	@ApiResponses({
+		@ApiResponse(
+			responseCode = "200",
+			description = "Espacio asignado a la EINA correctamente.",
+			content = @Content(
+				mediaType = MediaType.APPLICATION_JSON_VALUE,
+				schema = @Schema(implementation = EspacioDTO.class)
+			)
+		),
+		@ApiResponse(responseCode = "400", description = "La categoría del espacio no permite asignación a la EINA.", content = @Content),
+		@ApiResponse(responseCode = "404", description = "No existe ningún espacio con el ID indicado.", content = @Content)
+	})
+	@PutMapping("/{id}/asignacion/eina")
+	public EspacioDTO asignarAEina(@PathVariable String id) {
+		return EspacioDTO.fromEntity(espacioService.asignarAEina(id));
+	}
+
+	@Operation(
+    summary = "Asignar un espacio a un departamento",
+    description = "Asigna el espacio indicado al departamento especificado. " +
+                  "Aplicable a despachos, seminarios y laboratorios (REQ-C10, REQ-C11)."
+	)
+	@ApiResponses({
+		@ApiResponse(
+			responseCode = "200",
+			description = "Espacio asignado al departamento correctamente.",
+			content = @Content(
+				mediaType = MediaType.APPLICATION_JSON_VALUE,
+				schema = @Schema(implementation = EspacioDTO.class)
+			)
+		),
+		@ApiResponse(responseCode = "400", description = "La categoría del espacio no permite asignación a un departamento.", content = @Content),
+		@ApiResponse(responseCode = "404", description = "No existe ningún espacio con el ID indicado.", content = @Content)
+	})
+	@PutMapping("/{id}/asignacion/departamento")
+	public EspacioDTO asignarADepartamento(
+			@PathVariable String id,
+			@RequestBody AsignarDepartamentoDTO dto
+	) {
+		return EspacioDTO.fromEntity(
+			espacioService.asignarADepartamento(id, dto.departamentoId())
+		);
+	}
+
+	@Operation(
+    summary = "Asignar un espacio a una o más personas",
+    description = "Asigna el espacio indicado a las personas especificadas. " +
+                  "Solo aplicable a despachos, y las personas deben tener rol de " +
+                  "investigador contratado o docente-investigador (REQ-C10)."
+	)
+	@ApiResponses({
+		@ApiResponse(
+			responseCode = "200",
+			description = "Espacio asignado a las personas correctamente.",
+			content = @Content(
+				mediaType = MediaType.APPLICATION_JSON_VALUE,
+				schema = @Schema(implementation = EspacioDTO.class)
+			)
+		),
+		@ApiResponse(responseCode = "400", description = "La categoría del espacio no permite asignación a personas, o alguna persona no tiene el rol requerido.", content = @Content),
+		@ApiResponse(responseCode = "404", description = "No existe ningún espacio con el ID indicado o alguna de las personas no existe.", content = @Content)
+	})
+	@PutMapping("/{id}/asignacion/personas")
+	public EspacioDTO asignarAPersonas(
+			@PathVariable String id,
+			@RequestBody AsignarPersonasDTO dto
+	) {
+		return EspacioDTO.fromEntity(
+			espacioService.asignarAPersonas(id, dto.personaIds())
+		);
+	}
+
 }

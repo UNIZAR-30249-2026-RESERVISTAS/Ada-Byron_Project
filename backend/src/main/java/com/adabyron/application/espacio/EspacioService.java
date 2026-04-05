@@ -1,16 +1,23 @@
 package com.adabyron.application.espacio;
 
+import com.adabyron.domain.espacio.Asignacion;
 import com.adabyron.domain.espacio.Categoria;
 import com.adabyron.domain.espacio.Espacio;
 import com.adabyron.domain.espacio.EspacioId;
 import com.adabyron.domain.espacio.EspacioRepository;
 import com.adabyron.domain.espacio.HorarioDisponible;
 import com.adabyron.domain.espacio.exception.EspacioNotFoundException;
+import com.adabyron.domain.persona.DepartamentoId;
+import com.adabyron.domain.persona.PersonaId;
 import com.adabyron.domain.persona.PersonaRepository;
+import com.adabyron.domain.persona.Rol;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -92,6 +99,57 @@ public class EspacioService {
             .orElseThrow(() -> new EspacioNotFoundException(espacioId));
 
         return espacio.getHorarioDisponible();
+    }
+
+    public Espacio asignarAEina(String espacioId) {
+        Espacio espacio = espacioRepository.findById(new EspacioId(espacioId))
+            .orElseThrow(() -> new EspacioNotFoundException(espacioId));
+        espacio.cambiarAsignacion(Asignacion.eina());
+        return espacioRepository.save(espacio);
+    }
+
+    public Espacio asignarADepartamento(String espacioId, int departamentoId) {
+        Espacio espacio = espacioRepository.findById(new EspacioId(espacioId))
+            .orElseThrow(() -> new EspacioNotFoundException(espacioId));
+        espacio.cambiarAsignacion(Asignacion.departamento(new DepartamentoId(departamentoId)));
+        return espacioRepository.save(espacio);
+    }
+
+    public Espacio asignarAPersonas(String espacioId, Set<UUID> personaIds) {
+        if (personaIds == null || personaIds.isEmpty()) {
+            throw new IllegalArgumentException("Se debe indicar al menos una persona");
+        }
+
+        Set<PersonaId> ids = personaIds.stream()
+            .map(id -> {
+                var persona = personaRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Persona no encontrada: " + id));
+
+                boolean rolValido =
+                    persona.tieneRol(Rol.INVESTIGADOR_CONTRATADO) ||
+                    persona.tieneRol(Rol.DOCENTE_INVESTIGADOR);
+
+                if (!rolValido) {
+                    throw new IllegalArgumentException(
+                        "Solo se puede asignar a investigador contratado o docente-investigador. Persona: " + id + " no tiene un rol válido."
+                    );
+                }
+                return persona.getPersonaId();
+            })
+            .collect(Collectors.toSet());
+
+        Espacio espacio = espacioRepository.findById(new EspacioId(espacioId))
+            .orElseThrow(() -> new EspacioNotFoundException(espacioId));
+
+        espacio.cambiarAsignacion(Asignacion.personas(ids));
+        return espacioRepository.save(espacio);
+    }
+
+    @Transactional(readOnly = true)
+    public Asignacion obtenerAsignacion(String espacioId) {
+        Espacio espacio = espacioRepository.findById(new EspacioId(espacioId))
+            .orElseThrow(() -> new EspacioNotFoundException(espacioId));
+        return espacio.getAsignacion();
     }
 
 }
