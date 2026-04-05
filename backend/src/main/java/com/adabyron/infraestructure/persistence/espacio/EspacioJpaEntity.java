@@ -40,4 +40,13 @@ public class EspacioJpaEntity {
 
     @Column(name = "hora_cierre", nullable = true)
     private LocalTime horaCierre;
+
+    @Column(name = "tipo_asignacion", nullable = true)
+    private String tipoAsignacion; // EINA, DEPARTAMENTO, PERSONAS
+
+    @Column(name = "departamento_asignado_id", nullable = true)
+    private Integer departamentoAsignadoId;
+
+    @Column(name = "persona_asignada_ids", columnDefinition = "TEXT", nullable = true)
+    private String personaAsignadaIds; // UUIDs, separados por coma
 }

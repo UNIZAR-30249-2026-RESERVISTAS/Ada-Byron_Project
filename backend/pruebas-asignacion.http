@@ -1,0 +1,244 @@
+### ASIGNACION DE ESPACIOS
+
+@personasUrl = http://localhost:8081/api/personas
+@reservasUrl = http://localhost:8081/api/reservas
+@baseUrl = http://localhost:8081/api/espacios
+@contentType = application/json
+
+### IDs de espacios de ejemplo 
+@labId = 028
+@despachoId = 027
+@aulaId = 102
+@salaComunId = 108
+
+### ----------------------------------------------------------
+### 0) Crear personas para pruebas de asignacion
+### ----------------------------------------------------------
+
+### Docente-Investigador, depto 1 (funciona correctamente)
+# @name crearDocenteDept1
+POST {{personasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Docente Depto 1",
+  "email": "docente.depto1.asig.e2e@example.com",
+  "password": "password123",
+  "rol": "DOCENTE_INVESTIGADOR",
+  "departamentoId": 1
+}
+
+### Docente-Investigador, depto 2 (funciona correctamente)
+# @name crearDocenteDept2
+POST {{personasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Docente Depto 2",
+  "email": "docente.depto2.asig.e2e@example.com",
+  "password": "password123",
+  "rol": "DOCENTE_INVESTIGADOR",
+  "departamentoId": 2
+}
+
+### Investigador contratado, depto 1 (valido para asignacion a personas) (funciona correctamente)
+# @name crearInvDept1
+POST {{personasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Investigador Depto 1",
+  "email": "investigador.depto1.asig.e2e@example.com",
+  "password": "password123",
+  "rol": "INVESTIGADOR_CONTRATADO",
+  "departamentoId": 1
+}
+
+### Estudiante (NO valido para asignacion a personas en despachos) (funciona correctamente)
+# @name crearEstudiante
+POST {{personasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Estudiante Prueba",
+  "email": "estudiante.asig.e2e@example.com",
+  "password": "password123",
+  "rol": "ESTUDIANTE",
+  "departamentoId": null
+}
+
+@docenteDept1Id = {{crearDocenteDept1.response.body.id}}
+@docenteDept2Id = {{crearDocenteDept2.response.body.id}}
+@invDept1Id = {{crearInvDept1.response.body.id}}
+@estudianteId = {{crearEstudiante.response.body.id}}
+
+### ----------------------------------------------------------
+### 1) Consultar asignacion inicial de laboratorio
+### ----------------------------------------------------------
+GET {{baseUrl}}/{{labId}}/asignacion
+
+### ----------------------------------------------------------
+### 2) Asignar laboratorio a departamento 1 (debe funcionar) (funciona correctamente)
+### ----------------------------------------------------------
+PUT {{baseUrl}}/{{labId}}/asignacion/departamento
+Content-Type: {{contentType}}
+
+{
+  "departamentoId": 1
+}
+
+### Verificar asignacion actual
+GET {{baseUrl}}/{{labId}}/asignacion
+
+### ----------------------------------------------------------
+### 3) Validar impacto en reservas (REQ-F4)
+### ----------------------------------------------------------
+
+### 3.1 Docente depto 1 reserva laboratorio asignado a depto 1 -> CONFIRMADA (funciona correctamente)
+# @name reservaLabDocenteDept1
+POST {{reservasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{labId}}"],
+  "reservadaPorId": "{{docenteDept1Id}}",
+  "tipoUso": "INVESTIGACION",
+  "numeroAsistentes": 5,
+  "fecha": "2026-12-15",
+  "horaInicio": "10:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Reserva valida mismo depto"
+}
+
+@reservaDocenteDept1Id = {{reservaLabDocenteDept1.response.body.id}}
+### Verificar reserva creada
+GET {{reservasUrl}}/{{reservaDocenteDept1Id}}
+
+### 3.2 Docente depto 2 reserva laboratorio asignado a depto 1 -> RECHAZADA (puesto que el espacio está asignado al depto 1 y el docente es de depto 2) (funciona correctamente)
+# @name reservaLabDocenteDept2
+POST {{reservasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{labId}}"],
+  "reservadaPorId": "{{docenteDept2Id}}",
+  "tipoUso": "INVESTIGACION",
+  "numeroAsistentes": 4,
+  "fecha": "2026-12-15",
+  "horaInicio": "12:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Debe rechazar por depto distinto"
+}
+
+@reservaDocenteDept2Id = {{reservaLabDocenteDept2.response.body.id}}
+### Verificar reserva creada (debe estar rechazada o no creada)
+GET {{reservasUrl}}/{{reservaDocenteDept2Id}}
+
+### ----------------------------------------------------------
+### 4) Cambiamos el espacio, pasa de estar como laboratorio a EINA y repetimos la reserva depto 2
+### ----------------------------------------------------------
+PUT {{baseUrl}}/{{labId}}/asignacion/eina (funciona correctamente)
+Content-Type: {{contentType}}
+
+### Verificar asignacion actual
+GET {{baseUrl}}/{{labId}}/asignacion
+
+### Docente depto 2 ahora debe poder reservar (si no hay solape), puesto que el espacio al ser EINA no tiene restriccion de departamento (funciona correctamente)
+# @name reservaLabDocenteDept2Eina
+POST {{reservasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{labId}}"],
+  "reservadaPorId": "{{docenteDept2Id}}",
+  "tipoUso": "INVESTIGACION",
+  "numeroAsistentes": 4,
+  "fecha": "2026-12-15",
+  "horaInicio": "14:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Con EINA no aplica restriccion de depto"
+}
+
+@reservaDocenteDept2EinaId = {{reservaLabDocenteDept2Eina.response.body.id}}
+### Verificar reserva creada (debe estar confirmada)
+GET {{reservasUrl}}/{{reservaDocenteDept2EinaId}}
+
+### ----------------------------------------------------------
+### 5) Reglas de categoria en asignacion (positivos y negativos)
+### ----------------------------------------------------------
+
+### 5.1 Aula a departamento -> DEBE FALLAR (aula solo puede ser asignada a EINA) (funciona correctamente)
+PUT {{baseUrl}}/{{aulaId}}/asignacion/departamento
+Content-Type: {{contentType}}
+
+{
+  "departamentoId": 1
+}
+
+### 5.2 Sala comun a departamento -> DEBE FALLAR (sala comun solo puede ser asignada a EINA) (funciona correctamente)
+PUT {{baseUrl}}/{{salaComunId}}/asignacion/departamento
+Content-Type: {{contentType}}
+
+{
+  "departamentoId": 1
+}
+
+### 5.3 Despacho a EINA -> DEBE FALLAR (los despachos no pueden ser asignados a EINA, solo a departamento o personas) (funciona correctamente)
+PUT {{baseUrl}}/{{despachoId}}/asignacion/eina
+Content-Type: {{contentType}}
+
+### 5.4 Despacho a departamento -> DEBE FUNCIONAR (funciona correctamente)
+PUT {{baseUrl}}/{{despachoId}}/asignacion/departamento
+Content-Type: {{contentType}}
+
+{
+  "departamentoId": 1
+}
+
+### Verificamos la asignacion actual, debe mostrar el departamento asignado
+GET {{baseUrl}}/{{despachoId}}/asignacion
+
+### 5.5 Despacho a personas validas -> DEBE FUNCIONAR (funciona correctamente)
+PUT {{baseUrl}}/{{despachoId}}/asignacion/personas
+Content-Type: {{contentType}}
+
+{
+  "personaIds": ["{{invDept1Id}}", "{{docenteDept1Id}}"]
+}
+### Verificamos la asignacion actual, debe mostrar las personas asignadas
+GET {{baseUrl}}/{{despachoId}}/asignacion
+
+### 5.6 Despacho a personas vacio -> DEBE FALLAR (al menos una persona debe ser asignada) (funciona correctamente)
+PUT {{baseUrl}}/{{despachoId}}/asignacion/personas
+Content-Type: {{contentType}}
+
+{
+  "personaIds": []
+}
+
+### 5.7 Despacho a persona con rol no permitido (estudiante) -> DEBE FALLAR (los despachos solo pueden ser asignados a personas con roles de docente o investigador) (funciona correctamente)
+PUT {{baseUrl}}/{{despachoId}}/asignacion/personas
+Content-Type: {{contentType}}
+
+{
+  "personaIds": ["{{estudianteId}}"]
+}
+
+### 5.8 Laboratorio a personas -> DEBE FALLAR (solo EINA o DEPARTAMENTO) (funciona correctamente)
+PUT {{baseUrl}}/{{labId}}/asignacion/personas
+Content-Type: {{contentType}}
+
+{
+  "personaIds": ["{{invDept1Id}}"]
+}
+
+### ----------------------------------------------------------
+### 6) Comprobar impacto de cambios en asignacion sobre reservas existentes
+### ----------------------------------------------------------
+GET {{reservasUrl}}
+
+### Ver reservas por persona para verificar el impacto de las asignaciones
+GET {{reservasUrl}}/persona/{{docenteDept1Id}}
+
+### Ver reservas por persona para verificar el impacto de las asignaciones
+GET {{reservasUrl}}/persona/{{docenteDept2Id}}

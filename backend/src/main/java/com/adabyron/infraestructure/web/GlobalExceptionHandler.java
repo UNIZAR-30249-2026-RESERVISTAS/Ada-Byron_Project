@@ -67,4 +67,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(com.adabyron.domain.espacio.exception.EspacioNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleEspacioNotFound(
+            com.adabyron.domain.espacio.exception.EspacioNotFoundException ex
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", ex.getMessage()));
+    }
 }

@@ -50,9 +50,11 @@ public class ReservaValidacionService {
         // Obtener la categoría de reserva del espacio
         CategoriaReserva categoria = obtenerCategoria(espacio);
 
-        // REQ-F5 — los despachos no pueden reservarse (salvo O3 y gerente)
-        if (categoria == CategoriaReserva.DESPACHO)
-            throw new ReservaInvalidaException("Los despachos no pueden reservarse (REQ-F5)");
+        // REQ-O4 — Un despacho podrá ser reservable en caso de que esté asignado a un DPTO.
+        // En ese caso, solo podrán reservarlo los investigadores contratados y docentes investigadores de ese DPTO o los gerentes.
+        if (categoria == CategoriaReserva.DESPACHO) {
+            validarReservaDespacho(persona, deptoEspacio);
+        } 
 
         // REQ-F1, F2, F3 — permisos por rol
         Rol rolPrincipal = persona.rolPrincipal();
@@ -101,21 +103,56 @@ public class ReservaValidacionService {
         }
     }
 
+    /**
+     * REQ-O3: Validaciones específicas para reservas de despachos:
+     * - El despacho debe estar asignado a un departamento (no pueden reservarse despachos sin asignación o asignados a personas).
+     * - Solo investigadores contratados, docentes-investigadores pueden reservar despachos.
+     */
+    private void validarReservaDespacho(Persona persona, DepartamentoId deptoEspacio) {
+        if (deptoEspacio == null) {
+            throw new ReservaInvalidaException(
+                "Los despachos solo pueden reservarse si están asignados a un departamento (REQ-O3)"
+            );
+        }
+
+        boolean rolPermitido =
+            persona.tieneRol(Rol.INVESTIGADOR_CONTRATADO) ||
+            persona.tieneRol(Rol.DOCENTE_INVESTIGADOR);
+
+        if (!rolPermitido) {
+            throw new ReservaInvalidaException(
+                "Solo investigadores contratados o docentes-investigadores pueden reservar despachos departamentales (REQ-O3)"
+            );
+        }
+
+        DepartamentoId deptoPersona = persona.getDepartamentoId();
+        if (deptoPersona == null || !deptoPersona.equals(deptoEspacio)) {
+            throw new ReservaInvalidaException(
+                "Solo puedes reservar despachos de tu departamento (REQ-O3)"
+            );
+        }
+    }
+
+    /**
+     * REQ-F4: Validaciones específicas para reservas de laboratorios:
+     * - Solo técnicos de laboratorio, investigadores contratados y docentes-investigadores pueden reservar laboratorios.
+     * - Además, solo pueden reservar laboratorios asignados a su mismo departamento (si el espacio tiene asignación departamental). 
+     */
     private void validarDepartamentoLaboratorio(Persona persona, DepartamentoId deptoEspacio) {
         boolean requiereValidacionDepto =
             persona.tieneRol(Rol.TECNICO_LABORATORIO) ||
             persona.tieneRol(Rol.INVESTIGADOR_CONTRATADO) ||
             persona.tieneRol(Rol.DOCENTE_INVESTIGADOR);
 
-        if (!requiereValidacionDepto) return;
+        if (!requiereValidacionDepto || deptoEspacio == null) return;
 
         DepartamentoId deptoPersona = persona.getDepartamentoId();
-        if (deptoPersona == null || deptoEspacio == null || !deptoPersona.equals(deptoEspacio))
+        if (deptoPersona == null || !deptoPersona.equals(deptoEspacio))
             throw new ReservaInvalidaException(
                 "Solo puedes reservar laboratorios de tu departamento (REQ-F4)"
             );
     }
-
+    
     private void validarAforo(Espacio espacio, int numAsistentes, double porcentajeOcup) {
         int maxPermitidos = calcularAforo(espacio, porcentajeOcup);
         if (numAsistentes > maxPermitidos)
