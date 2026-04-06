@@ -2,6 +2,8 @@
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 export default function MapaProxy({ data, floorId }: { data: any, floorId: string }) {
   const getStyle = (feature: any) => {
     const tipo = feature.properties?.USO || 'default';
@@ -43,8 +45,8 @@ export default function MapaProxy({ data, floorId }: { data: any, floorId: strin
                 return;
               }
 
-              try {
-                const response = await fetch(`http://localhost:8081/api/espacios/${idDominio}`);
+              try {// URL Sustituida por variable de entorno
+                const response = await fetch(`${API_URL}/api/espacios/${idDominio}`);
 
                 if (!response.ok) {
                   throw new Error('No se encontraron los datos en el servidor');

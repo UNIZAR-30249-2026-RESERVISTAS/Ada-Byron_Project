@@ -1,5 +1,7 @@
 'use server'
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 export async function reservarEspacio(prevState: any, data: FormData) {
     //console.log('Datos recibidos en reservarEspacio:', data);
 
@@ -20,7 +22,10 @@ export async function reservarEspacio(prevState: any, data: FormData) {
     const numeroAsistentes = Number(data.get('numeroAsistentes')) || 0;
     const duracionMinutos = Number(data.get('duracionMinutos')) || 0;
 
-    const response = await fetch('http://172.31.245.33:8081/api/reservas', {
+
+
+    // URL Sustituida por variable de entorno
+    const response = await fetch(`${API_URL}/api/reservas`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

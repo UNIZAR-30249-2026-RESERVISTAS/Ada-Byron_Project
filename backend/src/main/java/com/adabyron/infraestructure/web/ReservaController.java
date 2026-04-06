@@ -6,6 +6,7 @@ import java.util.UUID;
 import com.adabyron.application.reserva.CrearReservaDTO;
 import com.adabyron.application.reserva.ReservaDTO;
 import com.adabyron.application.reserva.ReservaService;
+import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import java.util.Collection;
 
 
 @RestController
@@ -31,6 +35,37 @@ public class ReservaController {
  
     public ReservaController(ReservaService reservaService) {
         this.reservaService = reservaService;
+    }
+
+    private UUID requirePersonaId(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("personaId") == null) {
+            throw new OperacionNoAutorizadaException("Debes iniciar sesión");
+        }
+        return UUID.fromString(String.valueOf(session.getAttribute("personaId")));
+    }
+
+    private boolean esGerente(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) return false;
+
+        Object rolesObj = session.getAttribute("roles");
+        return rolesObj instanceof Collection<?> roles
+                && roles.stream().anyMatch(r -> "GERENTE".equals(String.valueOf(r)));
+    }
+
+    private void requireGerente(HttpServletRequest request) {
+        requirePersonaId(request);
+        if (!esGerente(request)) {
+            throw new OperacionNoAutorizadaException("Solo el gerente puede acceder a este recurso");
+        }
+    }
+
+    private void requireMismoUsuarioOGerente(HttpServletRequest request, UUID personaObjetivo) {
+        UUID personaSesion = requirePersonaId(request);
+        if (!esGerente(request) && !personaSesion.equals(personaObjetivo)) {
+            throw new OperacionNoAutorizadaException("No tienes permisos para consultar reservas de otro usuario");
+        }
     }
  
     @Operation(
@@ -86,7 +121,8 @@ public class ReservaController {
         )
     })
     @GetMapping
-    public List<ReservaDTO> listarActivas() {
+    public List<ReservaDTO> listarActivas(HttpServletRequest request) {
+        requireGerente(request);
         return reservaService.listarReservasActivas().stream()
                              .map(ReservaDTO::fromEntity)
                              .toList();
@@ -137,8 +173,10 @@ public class ReservaController {
     @GetMapping("/persona/{personaId}")
     public List<ReservaDTO> listarPorPersona(
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
-        @PathVariable UUID personaId
+        @PathVariable UUID personaId,
+        HttpServletRequest request
     ) {
+        requireMismoUsuarioOGerente(request, personaId);
         return reservaService.listarPorPersona(personaId).stream()
                              .map(ReservaDTO::fromEntity)
                              .toList();
@@ -161,8 +199,10 @@ public class ReservaController {
     @GetMapping("/activas/{personaId}")
     public List<ReservaDTO> listarActivasPorPersona(
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
-        @PathVariable UUID personaId
+        @PathVariable UUID personaId,
+        HttpServletRequest request
     ) {
+        requireMismoUsuarioOGerente(request, personaId);
         return reservaService.listarActivasPorPersona(personaId).stream()
                 .map(ReservaDTO::fromEntity)
                              .toList();
@@ -186,7 +226,8 @@ public class ReservaController {
         )
     })
     @GetMapping("/potencialmente-invalidas")
-    public List<ReservaDTO> listarPotencialmenteInvalidas() {
+    public List<ReservaDTO> listarPotencialmenteInvalidas(HttpServletRequest request) {
+        requireGerente(request);    
         return reservaService.listarPotencialmenteInvalidas().stream()
                              .map(ReservaDTO::fromEntity)
                              .toList();
@@ -228,10 +269,17 @@ public class ReservaController {
         @Parameter(description = "UUID de la reserva", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
         @PathVariable UUID id,
         @Parameter(description = "UUID del gerente que ejecuta la revalidación", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
-        @RequestParam UUID gerenteId
+        @RequestParam UUID gerenteId,
+        HttpServletRequest request
     ) {
-        return ReservaDTO.fromEntity(reservaService.revalidarReserva(id, gerenteId));
-    }
+        UUID personaSesion = requirePersonaId(request);
+        requireGerente(request);
+
+        if (!personaSesion.equals(gerenteId)) {
+            throw new OperacionNoAutorizadaException("No puedes revalidar usando el gerenteId de otro usuario");
+        }
+            return ReservaDTO.fromEntity(reservaService.revalidarReserva(id, gerenteId));
+        }
  
     @Operation(
         summary = "Cancelar una reserva",

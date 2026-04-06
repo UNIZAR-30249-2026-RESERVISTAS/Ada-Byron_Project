@@ -43,6 +43,7 @@ public class ReservaValidacionService {
 
         // REQ-F8 — el gerente puede reservar cualquier espacio reservable
         if (persona.tieneRol(Rol.GERENTE)) {
+            validarAforo(espacio, numAsistentes, porcentajeOcup);
             validarDisponibilidad(espacio, intervalo, reservasExist);
             return;
         }

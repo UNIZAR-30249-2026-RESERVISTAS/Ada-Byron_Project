@@ -42,6 +42,7 @@ const roleColors: Record<string, string> = {
 };
 
 const ITEMS_PER_PAGE = 10;
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL; 
 
 function UserAvatar({ name, role }: { name: string; role: string }) {
     const initials = name
@@ -75,8 +76,10 @@ export function UsersDashboard() {
     // Función para cargar los usuarios
     const fetchUsers = async () => {
         try {
-            setLoading(true);
-            const response = await fetch('http://localhost:8081/api/personas');
+            setLoading(true); // Susituida por variable de entorno
+            const response = await fetch(`${API_URL}/api/personas`, {
+                credentials: 'include', // para enviar cookies de sesión
+            });
             if (!response.ok) {
                 throw new Error('Error al cargar los usuarios desde la API');
             }
@@ -90,8 +93,10 @@ export function UsersDashboard() {
     };
 
     const fetchNumeroReservas = async (personaId: string) => {
-        try {
-            const response = await fetch(`http://localhost:8081/api/reservas/activas/${personaId}`);
+        try { // sustituida por variable de entorno
+            const response = await fetch(`${API_URL}/api/reservas/activas/${personaId}`, {
+                credentials: 'include',
+            });
             if (!response.ok) {
                 throw new Error('Error al cargar el número de reservas');
             }
@@ -126,9 +131,10 @@ export function UsersDashboard() {
     // Función para eliminar un usuario
     const handleDeleteUser = async (userId: string) => {
         if (window.confirm('¿Estás seguro de que quieres eliminar a este usuario?')) {
-            try {
-                const response = await fetch(`http://localhost:8081/api/personas/${userId}`, {
+            try { // Sustituida por variable de entorno
+                const response = await fetch(`${API_URL}/api/personas/${userId}`, {
                     method: 'DELETE',
+                    credentials: 'include',
                 });
 
                 if (!response.ok) {

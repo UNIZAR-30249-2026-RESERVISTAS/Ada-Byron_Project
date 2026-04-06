@@ -1,4 +1,6 @@
-const API_URL = 'http://localhost:8081';
+
+
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL; // Sustituida por variable de entorno
 
 // Roles disponibles 
 export type Rol =

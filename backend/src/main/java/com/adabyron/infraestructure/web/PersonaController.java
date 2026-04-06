@@ -1,6 +1,7 @@
 package com.adabyron.infraestructure.web;
 
 import com.adabyron.application.persona.*;
+import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -10,6 +11,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import java.util.Collection;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,6 +32,30 @@ public class PersonaController {
 
     public PersonaController(PersonaService personaService) {
         this.personaService = personaService;
+    }
+    // Funciones auxiliares para autorización basada en sesión
+    private UUID requirePersonaId(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("personaId") == null) {
+            throw new OperacionNoAutorizadaException("Debes iniciar sesión");
+        }
+        return UUID.fromString(String.valueOf(session.getAttribute("personaId")));
+    }
+
+    private void requireGerente(HttpServletRequest request) {
+        requirePersonaId(request);
+        if (!esGerente(request)) {
+            throw new OperacionNoAutorizadaException("Solo el gerente puede acceder a este recurso");
+        }
+    }
+
+    private boolean esGerente(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) return false;
+
+        Object rolesObj = session.getAttribute("roles");
+        return rolesObj instanceof Collection<?> roles
+                && roles.stream().anyMatch(r -> "GERENTE".equals(String.valueOf(r)));
     }
 
     @Operation(
@@ -76,7 +104,8 @@ public class PersonaController {
         )
     })
     @GetMapping
-    public List<PersonaDTO> listarTodas() {
+    public List<PersonaDTO> listarTodas(HttpServletRequest request) {
+        requireGerente(request);
         return personaService.listarTodas().stream()
                 .map(PersonaDTO::fromEntity)
                 .toList();
@@ -148,8 +177,10 @@ public class PersonaController {
     public PersonaDTO cambiarRol(
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
         @PathVariable UUID id,
-        @RequestBody CambiarRolDTO dto
+        @RequestBody CambiarRolDTO dto,
+        HttpServletRequest request
     ) {
+        requireGerente(request);
         return PersonaDTO.fromEntity(personaService.cambiarRol(id, dto));
     }
 
@@ -171,8 +202,10 @@ public class PersonaController {
     @PutMapping("/{id}/gerente")
     public PersonaDTO añadirGerente(
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
-        @PathVariable UUID id
+        @PathVariable UUID id,
+        HttpServletRequest request
     ) {
+        requireGerente(request);
         return PersonaDTO.fromEntity(personaService.añadirRolGerente(id));
     }
 
@@ -194,8 +227,10 @@ public class PersonaController {
     @DeleteMapping("/{id}/gerente")
     public PersonaDTO quitarGerente(
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
-        @PathVariable UUID id
+        @PathVariable UUID id,
+        HttpServletRequest request
     ) {
+        requireGerente(request);
         return PersonaDTO.fromEntity(personaService.quitarRolGerente(id));
     }
 
@@ -210,8 +245,10 @@ public class PersonaController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
-        @PathVariable UUID id
+        @PathVariable UUID id,
+        HttpServletRequest request
     ) {
+        requireGerente(request);
         personaService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
