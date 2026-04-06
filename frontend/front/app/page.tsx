@@ -8,7 +8,7 @@ import { reservarEspacio } from './actions';
 
 
 interface ReservaData {
-  espacioIds: string[];
+  espacioIds: string;
   tipoUso: string;
   numeroAsistentes: number;
   fecha: string;
@@ -33,7 +33,7 @@ export default function PaginaPrincipal() {
   const [filterOcupantes, setFilterOcupantes] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<ReservaData>({
-    espacioIds: [],
+    espacioIds: '',
     tipoUso: '',
     numeroAsistentes: 0,
     fecha: '',
@@ -44,6 +44,51 @@ export default function PaginaPrincipal() {
   const [state, formAction, isPending] = useActionState(reservarEspacio, null);
   const [user, setUser] = useState<any>(null);
   const [mostrarPopUp, setMostrarPopUp] = useState(false);
+  const [tipoUso, setTipoUso] = useState('');
+  const [cargandoTipoUso, setCargandoTipoUso] = useState(false);
+
+  useEffect(() => {
+    const textoIds = modalContent.espacioIds || '';
+    const primerId = textoIds.split(',')[0]?.trim();
+
+    // Si no hay ID, limpiamos el campo
+    if (!primerId) {
+      setTipoUso('');
+      return;
+    }
+
+    const obtenerTipoDeUso = async () => {
+      setCargandoTipoUso(true);
+      try {
+        // Reemplaza esta URL por la ruta real de tu endpoint
+        const response = await fetch(`http://172.31.245.33:8081/api/espacios/${primerId}`);
+        const data = await response.json();
+
+        if (data.categoria === 'Aula') {
+          setTipoUso('Docencia');
+        } else if (data.categoria === 'Despacho') {
+          setTipoUso('Gestión');
+        } else if (data.categoria === 'Laboratorio' || data.categoria === 'Seminario') {
+          setTipoUso('Investigación');
+        } else {
+          setTipoUso('Otro');
+        }
+      } catch (error) {
+        console.error("Error al obtener el espacio:", error);
+        setTipoUso('Error al cargar');
+      } finally {
+        setCargandoTipoUso(false);
+      }
+    };
+
+    // Usamos un pequeño retraso (debounce) de 500ms para esperar a que 
+    // el usuario termine de escribir el ID antes de llamar a la API
+    const timeoutId = setTimeout(() => {
+      obtenerTipoDeUso();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [modalContent.espacioIds]);
 
   useEffect(() => {
     if (state?.success) {
@@ -104,18 +149,14 @@ export default function PaginaPrincipal() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
-    if (name === 'espacioIds') {
-      // Aquí le decimos que 'id' es un string
-      const idsArray = value.split(',').map((id: string) => id.trim()).filter((id: string) => id !== "");
-      setModalContent(prev => ({ ...prev, [name]: idsArray }));
+
+    // Para los números (asistentes y duración), es buena idea convertirlos
+    if (name === 'numeroAsistentes' || name === 'duracionMinutos') {
+      setModalContent(prev => ({ ...prev, [name]: Number(value) }));
     } else {
-      // Para los números (asistentes y duración), es buena idea convertirlos
-      if (name === 'numeroAsistentes' || name === 'duracionMinutos') {
-        setModalContent(prev => ({ ...prev, [name]: Number(value) }));
-      } else {
-        setModalContent(prev => ({ ...prev, [name]: value }));
-      }
+      setModalContent(prev => ({ ...prev, [name]: value }));
     }
+
   };
 
 
@@ -378,7 +419,7 @@ export default function PaginaPrincipal() {
                   type="text"
                   name="espacioIds"
                   placeholder="101, 102..."
-                  value={modalContent.espacioIds.join(', ')}
+                  value={modalContent.espacioIds}
                   onChange={handleChange}
                   className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md focus:ring-2 focus:ring-[#3B6FD4] outline-none text-[13px] placeholder-gray-400 text-[#1B2A4A]"
                 />
@@ -386,20 +427,48 @@ export default function PaginaPrincipal() {
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Tipo de Uso */}
-                <div>
-                  <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Tipo de Uso</label>
-                  <select
-                    name="tipoUso"
-                    value={modalContent.tipoUso}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 bg-white border border-[#C8C3BB] rounded-md text-[13px] text-[#1B2A4A]"
-                  >
-                    <option value="Docencia">Docencia</option>
-                    <option value="Investigación">Investigación</option>
-                    <option value="Gestión">Gestión</option>
-                    <option value="Otro">Otro</option>
-                  </select>
-                </div>
+                {user.roles.includes('GERENTE') && (
+                  <div>
+                    <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Tipo de Uso</label>
+                    <select
+                      name="tipoUso"
+                      value={modalContent.tipoUso}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 bg-white border border-[#C8C3BB] rounded-md text-[13px] text-[#1B2A4A]"
+                    >
+                      <option value="Docencia">Docencia</option>
+                      <option value="Investigación">Investigación</option>
+                      <option value="Gestión">Gestión</option>
+                      <option value="Otro">Otro</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Tipo de Uso (Solo lectura) */}
+                {!user.roles.includes('GERENTE') && (
+                  <div>
+                    <label className="block text-[11px] text-[#6B6560] uppercase mb-1">
+                      Tipo de Uso
+                    </label>
+
+                    {/* Este input oculto asegura que el dato viaje en el formData (formAction) */}
+                    <input
+                      type="hidden"
+                      name="tipoUso"
+                      value={tipoUso}
+                    />
+
+                    {/* Este input es solo visual, para que el usuario vea el dato pero no pueda cambiarlo */}
+                    <input
+                      type="text"
+                      readOnly
+                      value={cargandoTipoUso ? 'Buscando...' : tipoUso}
+                      placeholder="Se autocompleta con el ID..."
+                      className="w-full px-3 py-2 bg-[#E5E2DC] border border-[#C8C3BB] rounded-md text-[13px] text-[#6B6560] cursor-not-allowed outline-none font-medium"
+                    />
+                  </div>
+                )}
+
                 {/* Número Asistentes */}
                 <div>
                   <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Asistentes</label>
@@ -537,7 +606,7 @@ export default function PaginaPrincipal() {
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
             </svg>
-            <span className="font-bold">¡Reserva realizada con éxito!</span>
+            <span className="font-bold">{state?.data.estado}</span>
           </div>
         </div>
       )}
