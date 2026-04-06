@@ -37,6 +37,7 @@ const estadoColors: Record<string, string> = {
 };
 
 const ITEMS_PER_PAGE = 10;
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL; 
 
 {/*
 function UserAvatar({ name, role }: { name: string; role: string }) {
@@ -72,8 +73,10 @@ export function ReservationDashboard() {
     // Función para cargar los usuarios
     const fetchUsers = async () => {
         try {
-            setLoading(true);
-            const response = await fetch('http://localhost:8081/api/reservas');
+            setLoading(true); // Sustituida por variable de entorno
+            const response = await fetch(`${API_URL}/api/reservas`, {
+                credentials: 'include',
+            });
             if (!response.ok) {
                 throw new Error('Error al cargar los usuarios desde la API');
             }
@@ -93,9 +96,10 @@ export function ReservationDashboard() {
     // Función para eliminar una reserva
     const handleDeleteReservation = async (id: string, solicitanteId: string) => {
         if (window.confirm('¿Estás seguro de que quieres eliminar esta reserva?')) {
-            try {
-                const response = await fetch(`http://localhost:8081/api/reservas/${id}/permanente?solicitanteId=${solicitanteId}`, {
+            try { // Sustituida por variable de entorno
+                const response = await fetch(`${API_URL}/api/reservas/${id}/permanente?solicitanteId=${solicitanteId}`, {
                     method: 'DELETE',
+                    credentials: 'include',
                 });
 
                 if (!response.ok) {
@@ -119,8 +123,10 @@ export function ReservationDashboard() {
     };
 
     const buscarNombreUsuario = async (personaId: string) => {
-        try {
-            const response = await fetch(`http://localhost:8081/api/personas/${personaId}`);
+        try { // Sustituir por variable de entorno
+            const response = await fetch(`${API_URL}/api/personas/${personaId}`, {
+                credentials: 'include',
+            });
             if (!response.ok) {
                 throw new Error('Error al cargar el número de reservas');
             }
@@ -132,7 +138,7 @@ export function ReservationDashboard() {
     };
 
     useEffect(() => {
-            // Recorremos la lista de usuarios que acabamos de descargar
+            // Recorremos la1 lista de usuarios que acabamos de descargar
             reservations.forEach(r => {
                 // Para evitar llamadas infinitas o repetidas, comprobamos si ya lo hemos buscado
                 if (nombres[r.id] === undefined) {

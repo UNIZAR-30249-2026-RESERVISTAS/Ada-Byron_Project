@@ -71,12 +71,13 @@ export default function PaginaPrincipal() {
   }
 
   const handleGoToUsersDashboard = () => {
+    if (!user?.roles?.includes('GERENTE')) return;
     router.push('/usuarios');
   };
-
   const handleGoToReservationsDashboard = () => {
+    if (!user?.roles?.includes('GERENTE')) return;
     router.push('/reservas');
-  }
+  };
 
   const currentFloor = selectedFloor.startsWith('planta')
     ? parseInt(selectedFloor.replace('planta', ''))
