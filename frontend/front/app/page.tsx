@@ -605,7 +605,7 @@ export default function PaginaPrincipal() {
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
             </svg>
-            <span className="font-bold">¡Reserva realizada con éxito!</span>
+            <span className="font-bold">{state?.data.estado}</span>
           </div>
         </div>
       )}
