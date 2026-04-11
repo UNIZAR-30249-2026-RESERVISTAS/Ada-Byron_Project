@@ -17,10 +17,23 @@ public class Edificio {
         new HorarioDisponible(LocalTime.of(8, 0), LocalTime.of(21, 0));
 
     /**
+     * Porcentaje máximo de ocupación permitido en el edificio por defecto
+     */
+    private static volatile PorcentajeOcupacion porcentajeOcupacionMaxima =
+        PorcentajeOcupacion.of(1.0);
+    /**
      * Obtiene el horario por defecto del edificio.
      * Los espacios sin horario específico usan este horario.
      */
     public static HorarioDisponible getHorarioPorDefecto() {
         return HORARIO_POR_DEFECTO;
+    }
+
+    public static double getPorcentajeOcupacionMaxima() {
+        return porcentajeOcupacionMaxima.valor();
+    }
+
+    public static void cambiarPorcentajeOcupacionMaxima(double nuevoPorcentaje) {
+        porcentajeOcupacionMaxima = PorcentajeOcupacion.of(nuevoPorcentaje);
     }
 }
