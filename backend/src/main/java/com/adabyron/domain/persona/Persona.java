@@ -102,6 +102,20 @@ public class Persona{
                 .orElseThrow(() -> new IllegalStateException("La persona debe tener al menos un rol"));
     }
 
+    /**
+     * Método para cambiar al adscripción departamental de la persona. 
+     * Solo puede ser llamado para personas que tengan un rol que requiera departamento (INV-3).
+     */
+    public void cambiarDepartamento(DepartamentoId nuevoDepartamento) {
+        if (!rolPrincipal().requiereDepartamento()) {
+            throw new DepartamentoNoPermitidoException(rolPrincipal());
+        }
+        if (nuevoDepartamento == null) {
+            throw new DepartamentoRequeridoException(rolPrincipal());
+        }
+
+        this.departamentoId = nuevoDepartamento.valor();
+    }
 
     // Métodos para validaciones inline de los datos de la persona
 

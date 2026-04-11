@@ -80,6 +80,15 @@ public class PersonaService {
         return personaRepository.save(persona);
     }
 
+    public Persona cambiarDepartamento(UUID id, CambiarDepartamentoDTO dto) {
+        Persona persona = buscarPorId(id);
+        DepartamentoId deptId = dto.departamentoId() != null
+                ? new DepartamentoId(dto.departamentoId())
+                : null;
+        persona.cambiarDepartamento(deptId);
+        return personaRepository.save(persona);
+    } 
+
     public void eliminar(UUID id) {
         if (!personaRepository.existsById(id)) {
             throw new PersonaNotFoundException(id);
