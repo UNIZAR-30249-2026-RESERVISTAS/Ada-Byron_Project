@@ -1,18 +1,11 @@
-### ============================================================
 ### PRUEBAS RESERVAS V2 - Cobertura de nuevos invariantes/reglas
-### ============================================================
-### Importante:
-### 1) Sustituye los placeholders por IDs reales de tu BD.
-### 2) Algunos endpoints requieren sesión HTTP (JSESSIONID).
-### 3) En REST Client de VS Code, tras login suele conservar cookies automáticamente.
-### ============================================================
 
 @host = http://localhost:8081
 @baseUrl = {{host}}/api/reservas
 @authUrl = {{host}}/api/auth
 @contentType = application/json
 
-### ---------- Datos de prueba (AJUSTAR A TU BD) ----------
+### Datos de prueba 
 @gerenteId = 2b3c463d-4497-4ba8-8f9d-ac6669983257
 @estudianteId = 8124f18a-b69f-428b-b235-ddfb4979ace9
 @docenteInvestigadorId = ed8c5b18-70b4-4af0-8222-748ff4cf6045
@@ -38,7 +31,7 @@
 ### A) AUTENTICACION Y SESION (para endpoints protegidos)
 ### ============================================================
 
-### A1. Login gerente (ajustar credenciales)
+### A1. Login gerente
 # @name loginGerente
 POST {{authUrl}}/login
 Content-Type: {{contentType}}
@@ -51,15 +44,11 @@ Content-Type: {{contentType}}
 ### A2. Verificar sesión activa actual
 GET {{authUrl}}/me
 
-### A3. Logout (opcional)
-POST {{authUrl}}/logout
 
-### A4. Endpoint protegido SIN sesión -> debe fallar (401/403 según handler)
+### A4. Endpoint protegido SIN sesión -> debe fallar 
 GET {{baseUrl}}
 
-### ============================================================
 ### B) CREACION - CASOS POSITIVOS
-### ============================================================
 
 ### B1. Estudiante reserva sala comun -> CONFIRMADA (REQ-F1/F6/F7 + horario)
 # @name crearReservaEstudianteSalaComunOK
@@ -109,9 +98,7 @@ Content-Type: {{contentType}}
   "detallesAdicionales": "Reserva multi-espacio"
 }
 
-### ============================================================
 ### C) CREACION - CASOS NEGATIVOS DE INVARIANTES
-### ============================================================
 
 ### C1. Sin espacios -> RECHAZADA o 4xx (INV-1)
 POST {{baseUrl}}
@@ -219,9 +206,7 @@ Content-Type: {{contentType}}
   "detallesAdicionales": "Debe fallar por aforo"
 }
 
-### ============================================================
 ### D) PERMISOS POR ROL / CATEGORIA / DEPARTAMENTO
-### ============================================================
 
 ### D1. Estudiante intenta reservar despacho -> RECHAZADA (REQ-O3/O4)
 POST {{baseUrl}}
@@ -283,11 +268,9 @@ Content-Type: {{contentType}}
   "detallesAdicionales": "No reservable"
 }
 
-### ============================================================
 ### E) CONSULTAS Y PERMISOS DE SESION
-### ============================================================
 
-### E1. Login como usuario normal (ajustar credenciales)
+### E1. Login como usuario normal
 # @name loginUsuario
 POST {{authUrl}}/login
 Content-Type: {{contentType}}
@@ -325,9 +308,7 @@ GET {{baseUrl}}/potencialmente-invalidas
 ### E8. Gerente lista reservas activas de persona -> OK
 GET {{baseUrl}}/activas/{{estudianteId}}
 
-### ============================================================
 ### F) CANCELACION (SOFT DELETE) Y ELIMINACION (HARD DELETE)
-### ============================================================
 
 ### F1. Crear reserva para luego cancelar
 # @name crearReservaParaCancelar
@@ -345,7 +326,7 @@ Content-Type: {{contentType}}
   "detallesAdicionales": "Reserva para probar cancelacion"
 }
 
-### F2. Buscar por ID la reserva creada y copiar UUID de respuesta en variable de abajo
+### F2. Buscamos por ID la reserva creada y copiar UUID de respuesta en variable de abajo
 @reservaACancelarId = UUID-DE-LA-RESERVA-CREADA
 
 ### F3. Cancelar como creador -> 204
@@ -399,9 +380,7 @@ DELETE {{baseUrl}}/{{reservaHardDeleteId}}/permanente?solicitanteId={{gerenteId}
 ### F9. Verificar que ya no existe -> 404
 GET {{baseUrl}}/{{reservaHardDeleteId}}
 
-### ============================================================
 ### G) REVALIDACION O4
-### ============================================================
 
 ### G1. Listar potencialmente inválidas (gerente) y escoger una con estado POTENCIALMENTE_INVALIDA
 GET {{baseUrl}}/potencialmente-invalidas
