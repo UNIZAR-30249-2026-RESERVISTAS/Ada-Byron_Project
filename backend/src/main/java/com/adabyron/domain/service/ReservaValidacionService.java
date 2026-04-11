@@ -38,8 +38,8 @@ public class ReservaValidacionService {
         validarHorarioDisponible(espacio, intervalo);
 
         // El espacio debe ser reservable
-        if (!espacio.isReservable())
-            throw new ReservaInvalidaException("El espacio " + espacio.getId().id() + " no es reservable");
+        // if (!espacio.isReservable())
+        //     throw new ReservaInvalidaException("El espacio " + espacio.getId().id() + " no es reservable");
 
         // REQ-F8 — el gerente puede reservar cualquier espacio reservable
         if (persona.tieneRol(Rol.GERENTE)) {

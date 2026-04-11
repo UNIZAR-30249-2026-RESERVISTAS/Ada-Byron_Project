@@ -235,6 +235,34 @@ public class PersonaController {
     }
 
     @Operation(
+        summary = "Cambiar el departamento de una persona",
+        description = "Actualiza la adscripción de departamento de la persona indicada. " +
+                    "Solo permitido si su rol principal requiere departamento."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Departamento actualizado correctamente.",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = PersonaDTO.class)
+            )
+        ),
+        @ApiResponse(responseCode = "400", description = "Departamento inválido o rol no compatible.", content = @Content),
+        @ApiResponse(responseCode = "404", description = "No existe ninguna persona con el ID indicado.", content = @Content)
+    })
+    @PutMapping("/{id}/departamento")
+    public PersonaDTO cambiarDepartamento(
+        @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
+        @PathVariable UUID id,
+        @RequestBody CambiarDepartamentoDTO dto,
+        HttpServletRequest request
+    ) {
+        requireGerente(request);
+        return PersonaDTO.fromEntity(personaService.cambiarDepartamento(id, dto));
+    }
+
+    @Operation(
         summary = "Eliminar una persona",
         description = "Elimina permanentemente del sistema la persona con el UUID indicado. La operación es irreversible."
     )

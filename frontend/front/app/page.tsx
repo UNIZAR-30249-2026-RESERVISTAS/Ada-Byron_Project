@@ -23,6 +23,8 @@ const MapWithNoSSR = dynamic(() => import('./MapaProxy'), {
   loading: () => <div className="h-full w-full bg-gray-100 flex items-center justify-center">Cargando mapa...</div>
 });
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL; 
+
 export default function PaginaPrincipal() {
   const router = useRouter();
   const [selectedFloor, setSelectedFloor] = useState('planta0');
@@ -61,7 +63,7 @@ export default function PaginaPrincipal() {
       setCargandoTipoUso(true);
       try {
         // Reemplaza esta URL por la ruta real de tu endpoint
-        const response = await fetch(`http://172.31.245.33:8081/api/espacios/${primerId}`);
+        const response = await fetch(`${API_URL}/api/espacios/${primerId}`);
         const data = await response.json();
 
         if (data.categoria === 'Aula') {

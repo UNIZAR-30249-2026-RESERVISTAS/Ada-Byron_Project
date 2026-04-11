@@ -13,8 +13,8 @@ Content-Type: {{contentType}}
     "nombre": "Ana García",
     "email": "ana.garcia@example.com",
     "password": "password123",
-    "rol": "ESTUDIANTE",
-    "departamentoId": null
+    "rol": "TECNICO_LABORATORIO",
+    "departamentoId": 1
 }
 
 ###  Crear una persona (GERENTE)
@@ -34,18 +34,18 @@ Content-Type: {{contentType}}
 @idEstudiante = {{crearEstudiante.response.body.id}}
 
 
-### 2. Crear una persona que requiere departamento (DOCENTE)
+### 2. Crear una persona que requiere departamento (DOCENTE, si el depto es null FALLA)
 # @name crearDocente
 POST {{baseUrl}}
 Content-Type: {{contentType}}
 
 {
-    "nombre": "Dr. House",
-    "email": "house@hospital.com",
+    "nombre": "Dr. Peter",
+    "email": "peter@hospital.com",
     "password": "password1234",
 
     "rol": "DOCENTE_INVESTIGADOR",
-    "departamentoId": 1
+    "departamentoId": null
 }
 
 ### 3. Error: Email inválido
@@ -107,3 +107,11 @@ GET {{departamentosUrl}}/2
 
 ### 15. Error: Departamento con ID inválido
 GET {{departamentosUrl}}/3
+
+### 16. Cambiar departamento de una persona (rol que requiere departamento)
+PUT {{baseUrl}}/{{idDocente}}/departamento
+Content-Type: {{contentType}}
+
+{
+    "departamentoId": 2
+}

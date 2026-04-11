@@ -7,7 +7,7 @@
 
 ### IDs de espacios de ejemplo 
 @labId = 028
-@despachoId = 027
+@despachoId = 421
 @aulaId = 102
 @salaComunId = 108
 
@@ -135,7 +135,7 @@ Content-Type: {{contentType}}
 GET {{reservasUrl}}/{{reservaDocenteDept2Id}}
 
 ### ----------------------------------------------------------
-### 4) Cambiamos el espacio, pasa de estar como laboratorio a EINA y repetimos la reserva depto 2
+### 4) Cambiamos el espacio, pasa de estar asignado a un dpto a la EINA y repetimos la reserva depto 2
 ### ----------------------------------------------------------
 PUT {{baseUrl}}/{{labId}}/asignacion/eina (funciona correctamente)
 Content-Type: {{contentType}}

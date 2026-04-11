@@ -8,6 +8,7 @@ import com.adabyron.domain.persona.exception.PersonaNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
+import com.adabyron.domain.edificio.Edificio;
 import com.adabyron.domain.espacio.Espacio;
 import com.adabyron.domain.espacio.EspacioId;
 import com.adabyron.domain.espacio.EspacioRepository;
@@ -80,7 +81,7 @@ public class ReservaService {
                     espacio,
                     dto.numeroAsistentes(),
                     intervalo,
-                    1.0,
+                    Edificio.getPorcentajeOcupacionMaxima(),
                     reservasExistentes,
                     deptoEspacio
                 );

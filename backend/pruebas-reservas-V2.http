@@ -1,0 +1,418 @@
+### ============================================================
+### PRUEBAS RESERVAS V2 - Cobertura de nuevos invariantes/reglas
+### ============================================================
+### Importante:
+### 1) Sustituye los placeholders por IDs reales de tu BD.
+### 2) Algunos endpoints requieren sesión HTTP (JSESSIONID).
+### 3) En REST Client de VS Code, tras login suele conservar cookies automáticamente.
+### ============================================================
+
+@host = http://localhost:8081
+@baseUrl = {{host}}/api/reservas
+@authUrl = {{host}}/api/auth
+@contentType = application/json
+
+### ---------- Datos de prueba (AJUSTAR A TU BD) ----------
+@gerenteId = 2b3c463d-4497-4ba8-8f9d-ac6669983257
+@estudianteId = 8124f18a-b69f-428b-b235-ddfb4979ace9
+@docenteInvestigadorId = ed8c5b18-70b4-4af0-8222-748ff4cf6045
+@investigadorContratadoId = 5cd6b8e3-c929-44c7-b46e-5ef7194f8e08
+@tecnicoLabId = 187d7297-5672-46cc-b06a-2a4c1fe8775f
+
+@personaNoAutorizadaId = 73f0901c-813d-47c1-bcca-76673c63a605
+
+@espacioSalaComun = 107
+@espacioAula = 002
+@espacioLaboratorioDeptoA = 324
+@espacioLaboratorioDeptoB = 028
+@espacioDespachoDeptoA = 421
+@espacioDespachoSinDepto = 414
+@espacioNoReservable = 001
+
+@fechaFutura = 2026-09-16
+@horaValida = 10:00
+@duracion60 = 60
+@duracion90 = 90
+
+### ============================================================
+### A) AUTENTICACION Y SESION (para endpoints protegidos)
+### ============================================================
+
+### A1. Login gerente (ajustar credenciales)
+# @name loginGerente
+POST {{authUrl}}/login
+Content-Type: {{contentType}}
+
+{
+  "email": "arturo.sanchez@example.com",
+  "password": "password123"
+}
+
+### A2. Verificar sesión activa actual
+GET {{authUrl}}/me
+
+### A3. Logout (opcional)
+POST {{authUrl}}/logout
+
+### A4. Endpoint protegido SIN sesión -> debe fallar (401/403 según handler)
+GET {{baseUrl}}
+
+### ============================================================
+### B) CREACION - CASOS POSITIVOS
+### ============================================================
+
+### B1. Estudiante reserva sala comun -> CONFIRMADA (REQ-F1/F6/F7 + horario)
+# @name crearReservaEstudianteSalaComunOK
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioSalaComun}}"],
+  "reservadaPorId": "{{estudianteId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 5,
+  "fecha": "{{fechaFutura}}",
+  "horaInicio": "{{horaValida}}",
+  "duracionMinutos": {{duracion60}},
+  "detallesAdicionales": "Caso positivo estudiante-sala"
+}
+
+### B2. Docente-investigador reserva laboratorio de su depto -> CONFIRMADA (REQ-F4)
+# @name crearReservaDocenteLabMismoDeptoOK
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioLaboratorioDeptoA}}"],
+  "reservadaPorId": "{{docenteInvestigadorId}}",
+  "tipoUso": "INVESTIGACION",
+  "numeroAsistentes": 6,
+  "fecha": "{{fechaFutura}}",
+  "horaInicio": "12:00",
+  "duracionMinutos": {{duracion90}},
+  "detallesAdicionales": "Caso positivo laboratorio mismo depto"
+}
+
+### B3. Reserva multi-espacio valida (INV-1 / O6)
+# @name crearReservaMultiEspacioOK
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioSalaComun}}", "{{espacioAula}}"],
+  "reservadaPorId": "{{docenteInvestigadorId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 8,
+  "fecha": "2026-09-21",
+  "horaInicio": "11:00",
+  "duracionMinutos": {{duracion60}},
+  "detallesAdicionales": "Reserva multi-espacio"
+}
+
+### ============================================================
+### C) CREACION - CASOS NEGATIVOS DE INVARIANTES
+### ============================================================
+
+### C1. Sin espacios -> RECHAZADA o 4xx (INV-1)
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": [],
+  "reservadaPorId": "{{estudianteId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 5,
+  "fecha": "{{fechaFutura}}",
+  "horaInicio": "{{horaValida}}",
+  "duracionMinutos": {{duracion60}},
+  "detallesAdicionales": "Debe fallar por INV-1"
+}
+
+### C2. numeroAsistentes <= 0 -> RECHAZADA o 4xx (INV-3)
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioSalaComun}}"],
+  "reservadaPorId": "{{estudianteId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 0,
+  "fecha": "{{fechaFutura}}",
+  "horaInicio": "{{horaValida}}",
+  "duracionMinutos": {{duracion60}},
+  "detallesAdicionales": "Debe fallar por INV-3"
+}
+
+### C3. Duracion invalida (0) -> 4xx por IntervaloTemporal
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioSalaComun}}"],
+  "reservadaPorId": "{{estudianteId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 4,
+  "fecha": "{{fechaFutura}}",
+  "horaInicio": "{{horaValida}}",
+  "duracionMinutos": 0,
+  "detallesAdicionales": "Duracion invalida"
+}
+
+### C4. Fuera de horario del espacio/edificio -> RECHAZADA (REQ-C5/C6)
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioSalaComun}}"],
+  "reservadaPorId": "{{estudianteId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 3,
+  "fecha": "{{fechaFutura}}",
+  "horaInicio": "23:30",
+  "duracionMinutos": {{duracion60}},
+  "detallesAdicionales": "Debe fallar por horario"
+}
+
+### C5. Solapamiento: crear primera reserva
+# @name crearReservaBaseSolape
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioSalaComun}}"],
+  "reservadaPorId": "{{estudianteId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 5,
+  "fecha": "2026-09-25",
+  "horaInicio": "16:00",
+  "duracionMinutos": 120,
+  "detallesAdicionales": "Base para prueba de solape"
+}
+
+### C6. Solapamiento sobre mismo espacio/intervalo -> RECHAZADA (REQ-F7)
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioSalaComun}}"],
+  "reservadaPorId": "{{docenteInvestigadorId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 4,
+  "fecha": "2026-09-25",
+  "horaInicio": "17:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Debe fallar por solape"
+}
+
+### C7. Aforo excedido -> RECHAZADA (REQ-F6)
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioAula}}"],
+  "reservadaPorId": "{{docenteInvestigadorId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 999,
+  "fecha": "{{fechaFutura}}",
+  "horaInicio": "09:00",
+  "duracionMinutos": {{duracion60}},
+  "detallesAdicionales": "Debe fallar por aforo"
+}
+
+### ============================================================
+### D) PERMISOS POR ROL / CATEGORIA / DEPARTAMENTO
+### ============================================================
+
+### D1. Estudiante intenta reservar despacho -> RECHAZADA (REQ-O3/O4)
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioDespachoDeptoA}}"],
+  "reservadaPorId": "{{estudianteId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 1,
+  "fecha": "{{fechaFutura}}",
+  "horaInicio": "10:00",
+  "duracionMinutos": {{duracion60}},
+  "detallesAdicionales": "Debe fallar por rol en despacho"
+}
+
+### D2. Investigador/docente en despacho sin depto asignado -> RECHAZADA (REQ-O3)
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioDespachoSinDepto}}"],
+  "reservadaPorId": "{{investigadorContratadoId}}",
+  "tipoUso": "INVESTIGACION",
+  "numeroAsistentes": 1,
+  "fecha": "{{fechaFutura}}",
+  "horaInicio": "11:00",
+  "duracionMinutos": {{duracion60}},
+  "detallesAdicionales": "Debe fallar por despacho sin dpto"
+}
+
+### D3. Tecnico/Investigador reserva laboratorio de otro depto -> RECHAZADA (REQ-F4)
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioLaboratorioDeptoB}}"],
+  "reservadaPorId": "{{tecnicoLabId}}",
+  "tipoUso": "INVESTIGACION",
+  "numeroAsistentes": 4,
+  "fecha": "{{fechaFutura}}",
+  "horaInicio": "12:00",
+  "duracionMinutos": {{duracion60}},
+  "detallesAdicionales": "Debe fallar por depto distinto en laboratorio"
+}
+
+### D4. Usuario reserva espacio no reservable -> RECHAZADA
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioNoReservable}}"],
+  "reservadaPorId": "{{estudianteId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 2,
+  "fecha": "{{fechaFutura}}",
+  "horaInicio": "13:00",
+  "duracionMinutos": {{duracion60}},
+  "detallesAdicionales": "No reservable"
+}
+
+### ============================================================
+### E) CONSULTAS Y PERMISOS DE SESION
+### ============================================================
+
+### E1. Login como usuario normal (ajustar credenciales)
+# @name loginUsuario
+POST {{authUrl}}/login
+Content-Type: {{contentType}}
+
+{
+  "email": "usuario@ejemplo.com",
+  "password": "password-usuario"
+}
+
+### E2. Usuario normal intenta listar todas las activas -> debe fallar (solo gerente)
+GET {{baseUrl}}
+
+### E3. Usuario normal consulta sus reservas -> OK
+GET {{baseUrl}}/persona/{{estudianteId}}
+
+### E4. Usuario normal consulta reservas de otra persona -> debe fallar
+GET {{baseUrl}}/persona/{{docenteInvestigadorId}}
+
+### E5. Login gerente para endpoints de gerente
+# @name loginGerente2
+POST {{authUrl}}/login
+Content-Type: {{contentType}}
+
+{
+  "email": "gerente@ejemplo.com",
+  "password": "password-gerente"
+}
+
+### E6. Gerente lista reservas activas -> OK
+GET {{baseUrl}}
+
+### E7. Gerente lista potencialmente invalidas -> OK
+GET {{baseUrl}}/potencialmente-invalidas
+
+### E8. Gerente lista reservas activas de persona -> OK
+GET {{baseUrl}}/activas/{{estudianteId}}
+
+### ============================================================
+### F) CANCELACION (SOFT DELETE) Y ELIMINACION (HARD DELETE)
+### ============================================================
+
+### F1. Crear reserva para luego cancelar
+# @name crearReservaParaCancelar
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioSalaComun}}"],
+  "reservadaPorId": "{{docenteInvestigadorId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 3,
+  "fecha": "2026-10-01",
+  "horaInicio": "09:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Reserva para probar cancelacion"
+}
+
+### F2. Buscar por ID la reserva creada y copiar UUID de respuesta en variable de abajo
+@reservaACancelarId = UUID-DE-LA-RESERVA-CREADA
+
+### F3. Cancelar como creador -> 204
+DELETE {{baseUrl}}/{{reservaACancelarId}}?solicitanteId={{docenteInvestigadorId}}&motivo=No%20la%20necesito
+
+### F4. Re-cancelar una cancelada -> debe fallar por transición de estado
+DELETE {{baseUrl}}/{{reservaACancelarId}}?solicitanteId={{docenteInvestigadorId}}&motivo=Segundo%20intento
+
+### F5. Crear reserva para probar cancelación no autorizada
+# @name crearReservaNoAutorizada
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioSalaComun}}"],
+  "reservadaPorId": "{{docenteInvestigadorId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 3,
+  "fecha": "2026-10-02",
+  "horaInicio": "10:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Cancelación no autorizada"
+}
+
+@reservaNoAutorizadaId = UUID-DE-LA-RESERVA-CREADA
+
+### F6. Cancelar por tercero no gerente ni creador -> 403 esperado
+DELETE {{baseUrl}}/{{reservaNoAutorizadaId}}?solicitanteId={{personaNoAutorizadaId}}&motivo=Intento%20no%20autorizado
+
+### F7. Crear reserva para hard delete
+# @name crearReservaParaHardDelete
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioSalaComun}}"],
+  "reservadaPorId": "{{docenteInvestigadorId}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 4,
+  "fecha": "2026-10-03",
+  "horaInicio": "11:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Hard delete test"
+}
+
+@reservaHardDeleteId = UUID-DE-LA-RESERVA-CREADA
+
+### F8. Eliminar permanentemente como gerente -> 204
+DELETE {{baseUrl}}/{{reservaHardDeleteId}}/permanente?solicitanteId={{gerenteId}}
+
+### F9. Verificar que ya no existe -> 404
+GET {{baseUrl}}/{{reservaHardDeleteId}}
+
+### ============================================================
+### G) REVALIDACION O4
+### ============================================================
+
+### G1. Listar potencialmente inválidas (gerente) y escoger una con estado POTENCIALMENTE_INVALIDA
+GET {{baseUrl}}/potencialmente-invalidas
+
+@reservaPotInvalidaId = UUID-DE-RESERVA-POTENCIALMENTE-INVALIDA
+
+### G2. Revalidar como gerente correcto -> 200 y estado CONFIRMADA
+PUT {{baseUrl}}/{{reservaPotInvalidaId}}/revalidar?gerenteId={{gerenteId}}
+
+### G3. Revalidar misma reserva otra vez -> debe fallar (no está POTENCIALMENTE_INVALIDA)
+PUT {{baseUrl}}/{{reservaPotInvalidaId}}/revalidar?gerenteId={{gerenteId}}
+
+### G4. Revalidar pasando gerenteId distinto al de la sesión -> 403 esperado
+PUT {{baseUrl}}/{{reservaPotInvalidaId}}/revalidar?gerenteId={{personaNoAutorizadaId}}
