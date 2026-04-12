@@ -28,7 +28,7 @@ public class Persona{
     // Constructor sin argumentos requerido por JPA
     protected Persona() {}
 
-    public Persona(PersonaId id, String nombre, String email, String passwordHash, Set<Rol> roles, DepartamentoId departamentoId) {
+    protected Persona(PersonaId id, String nombre, String email, String passwordHash, Set<Rol> roles, DepartamentoId departamentoId) {
         this.id = Objects.requireNonNull(id, "El id no puede ser nulo").valor();
         this.nombre = validarNombre(nombre);
         this.email = validarEmail(email);

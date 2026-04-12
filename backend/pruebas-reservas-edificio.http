@@ -1,0 +1,195 @@
+### Tras cambiar % ocupación del edificio, comprobar cada reserva CONFIRMADA:
+### numeroAsistentes <= floor(Maximo_Ocupantes * porcentajeOcupacion)
+
+@host = http://localhost:8081
+@authUrl = {{host}}/api/auth
+@personasUrl = {{host}}/api/personas
+@reservasUrl = {{host}}/api/reservas
+@edificioUrl = {{host}}/api/edificio
+@espaciosUrl = {{host}}/api/espacios
+@contentType = application/json
+
+### Datos dinámicos
+@testId = {{$timestamp}}
+@emailGerente = gerente.ocupacion.{{testId}}@example.com
+@emailEstudiante = estudiante.ocupacion.{{testId}}@example.com
+@password = password123
+
+### Espacio de prueba (en vuestro repo 107 suele ser sala comun)
+@espacioId = 135
+
+### Fechas futuras para evitar choques con reservas previas
+@fecha1 = 2027-01-15
+@fecha2 = 2027-01-16
+
+### A) Preparacion
+
+### A1. Crear GERENTE
+# @name crearGerente
+POST {{personasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Gerente Ocupacion {{testId}}",
+  "email": "{{emailGerente}}",
+  "password": "{{password}}",
+  "rol": "GERENTE",
+  "departamentoId": null
+}
+
+### A2. Crear ESTUDIANTE (reservador)
+# @name crearEstudiante
+POST {{personasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Estudiante Ocupacion {{testId}}",
+  "email": "{{emailEstudiante}}",
+  "password": "{{password}}",
+  "rol": "ESTUDIANTE",
+  "departamentoId": null
+}
+
+### A3. Login GERENTE
+# @name loginGerente
+POST {{authUrl}}/login
+Content-Type: {{contentType}}
+
+{
+  "email": "{{crearGerente.response.body.email}}",
+  "password": "{{password}}"
+}
+
+### A4. Guardar ocupacion inicial para restaurar al final
+# @name getOcupacionInicial
+GET {{edificioUrl}}/ocupacion
+
+### A5. (Opcional) Ver capacidad del espacio para calcular manualmente el umbral
+# @name getEspacio
+GET {{espaciosUrl}}/{{espacioId}}
+
+### B) Control: con ocupacion alta, reserva debe quedar CONFIRMADA
+
+### B1. Forzar ocupacion 1.0 (maxima)
+PUT {{edificioUrl}}/ocupacion
+Content-Type: {{contentType}}
+
+{
+  "porcentajeOcupacionMaxima": 1.0
+}
+
+### B2. Crear reserva base (5 asistentes) -> esperada CONFIRMADA
+# @name crearReservaBase
+POST {{reservasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioId}}"],
+  "reservadaPorId": "{{crearGerente.response.body.id}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 5,
+  "fecha": "{{fecha1}}",
+  "horaInicio": "14:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Base para test post-cambio ocupacion"
+}
+
+### B3. Consultar reserva base y verificar estado = CONFIRMADA
+GET {{reservasUrl}}/{{crearReservaBase.response.body.id}}
+
+### C) Caso principal del requisito: bajar ocupacion y revalidar confirmadas
+
+### C1. Bajar ocupacion a un valor muy bajo
+### Si no invalida en tu dataset, prueba 0.0001
+PUT {{edificioUrl}}/ocupacion
+Content-Type: {{contentType}}
+
+{
+  "porcentajeOcupacionMaxima": 0.001
+}
+
+### C2. Consultar la reserva base
+### REQUISITO ESPERADO: estado = POTENCIALMENTE_INVALIDA (o equivalente de invalida por cambio de condiciones)
+GET {{reservasUrl}}/{{crearReservaBase.response.body.id}}
+
+### C3. Consultar listado de potencialmente invalidas (requiere gerente)
+### REQUISITO ESPERADO: debe incluir crearReservaBase.response.body.id
+GET {{reservasUrl}}/potencialmente-invalidas
+
+### D) Control adicional: nuevas reservas SI aplican el nuevo porcentaje
+
+### D1. Crear nueva reserva con 5 asistentes tras bajar ocupacion
+### ESPERADO: estado RECHAZADA con motivo de aforo (REQ-F6)
+# @name crearReservaTrasBajada
+POST {{reservasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioId}}"],
+  "reservadaPorId": "{{crearGerente.response.body.id}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 5,
+  "fecha": "{{fecha2}}",
+  "horaInicio": "14:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Control de F6 tras cambio de ocupacion"
+}
+
+### D2. Consultar reserva creada tras bajada
+GET {{reservasUrl}}/{{crearReservaTrasBajada.response.body.id}}
+
+### E) Casos borde matematicos de floor(max * porcentaje)
+
+### E1. Fijar porcentaje 0.50
+PUT {{edificioUrl}}/ocupacion
+Content-Type: {{contentType}}
+
+{
+  "porcentajeOcupacionMaxima": 0.5
+}
+
+### E2. Con ocupantes del espacio = N (ver A5), maxPermitidos = floor(N * 0.5)
+### Crear una reserva con numeroAsistentes = maxPermitidos -> debe confirmar
+### (ajusta MANUALMENTE el valor antes de ejecutar)
+POST {{reservasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioId}}"],
+  "reservadaPorId": "{{crearEstudiante.response.body.id}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 10,
+  "fecha": "2027-01-17",
+  "horaInicio": "10:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Borde igual al maximo permitido"
+}
+
+### E3. Crear otra con maxPermitidos + 1 -> debe rechazar
+### (ajusta MANUALMENTE el valor antes de ejecutar)
+POST {{reservasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{espacioId}}"],
+  "reservadaPorId": "{{crearEstudiante.response.body.id}}",
+  "tipoUso": "DOCENCIA",
+  "numeroAsistentes": 11,
+  "fecha": "2027-01-18",
+  "horaInicio": "10:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Borde excedido en +1"
+}
+
+### F) Limpieza
+
+### F1. Restaurar ocupacion original
+PUT {{edificioUrl}}/ocupacion
+Content-Type: {{contentType}}
+
+{
+  "porcentajeOcupacionMaxima": 1.0
+}
+
+### F2. Logout
+POST {{authUrl}}/logout

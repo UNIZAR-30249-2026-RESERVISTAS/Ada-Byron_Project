@@ -1,0 +1,162 @@
+### PRUEBAS EdificioController
+### Comprueba:
+### - Consulta de ocupación
+### - Actualización de ocupación (PUT solo GERENTE con sesión)
+### - Validaciones de negocio y autorización
+
+@host = http://localhost:8081
+@authUrl = {{host}}/api/auth
+@personasUrl = {{host}}/api/personas
+@edificioUrl = {{host}}/api/edificio
+@contentType = application/json
+
+### Datos dinámicos para evitar choque por email duplicado
+@testId = {{$timestamp}}
+@emailGerente = gerente.edificio.{{testId}}@example.com
+@emailUsuario = usuario.edificio.{{testId}}@example.com
+@password = password123
+
+### A) Preparación: creamos usuarios de prueba
+
+### A1. Crear usuario GERENTE
+# @name crearGerente
+POST {{personasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Gerente Edificio {{testId}}",
+  "email": "{{emailGerente}}",
+  "password": "{{password}}",
+  "rol": "GERENTE",
+  "departamentoId": null
+}
+
+### A2. Crear usuario NO gerente (ESTUDIANTE)
+# @name crearUsuarioNormal
+POST {{personasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Usuario Normal {{testId}}",
+  "email": "{{emailUsuario}}",
+  "password": "{{password}}",
+  "rol": "ESTUDIANTE",
+  "departamentoId": null
+}
+
+### B) GET ocupación (sin login) -> DEBE funcionar (200)
+
+### B1. Consultar ocupación actual del edificio
+# @name getOcupacionInicial
+GET {{edificioUrl}}/ocupacion
+
+### C) PUT ocupación con GERENTE (casos válidos)
+
+### C1. Login como GERENTE
+# @name loginGerente
+POST {{authUrl}}/login
+Content-Type: {{contentType}}
+
+{
+  "email": "gerente.edificio.1776005372@example.com",
+  "password": "{{password}}"
+}
+
+### C2. Verificar sesión activa (opcional, debe devolver authenticated=true)
+GET {{authUrl}}/me
+
+### C3. Cambiar ocupación a un valor válido (ejemplo 0.75) -> 200
+# @name putOcupacionValida
+PUT {{edificioUrl}}/ocupacion
+Content-Type: {{contentType}}
+
+{
+  "porcentajeOcupacionMaxima": 0.75
+}
+
+### C4. Volver a consultar y comprobar que quedó en 0.75
+GET {{edificioUrl}}/ocupacion
+
+### D) PUT ocupación: validaciones (con GERENTE)
+
+### D1. Valor inválido > 1.0 -> DEBE fallar (400)
+PUT {{edificioUrl}}/ocupacion
+Content-Type: {{contentType}}
+
+{
+  "porcentajeOcupacionMaxima": 1.2
+}
+
+### D2. Valor inválido <= 0 -> DEBE fallar (400)
+PUT {{edificioUrl}}/ocupacion
+Content-Type: {{contentType}}
+
+{
+  "porcentajeOcupacionMaxima": 0.0
+}
+
+### D3. Campo null -> DEBE fallar (400)
+PUT {{edificioUrl}}/ocupacion
+Content-Type: {{contentType}}
+
+{
+  "porcentajeOcupacionMaxima": null
+}
+
+### E) PUT ocupación sin sesión -> DEBE fallar (403)
+
+### E1. Logout para limpiar sesión
+POST {{authUrl}}/logout
+
+### E2. Intentar actualizar sin login -> 403
+PUT {{edificioUrl}}/ocupacion
+Content-Type: {{contentType}}
+
+{
+  "porcentajeOcupacionMaxima": 0.60
+}
+
+### F) PUT ocupación con usuario NO gerente -> DEBE fallar (403)
+
+### F1. Login como usuario normal
+# @name loginUsuarioNormal
+POST {{authUrl}}/login
+Content-Type: {{contentType}}
+
+{
+  "email": "usuario.edificio.1776005379@example.com",
+  "password": "{{password}}"
+}
+
+### F2. Intentar actualizar siendo no gerente -> 403
+PUT {{edificioUrl}}/ocupacion
+Content-Type: {{contentType}}
+
+{
+  "porcentajeOcupacionMaxima": 0.65
+}
+
+### G) Restaurar valor original (limpieza)
+
+### G1. Logout usuario normal
+POST {{authUrl}}/logout
+
+### G2. Login gerente de nuevo
+POST {{authUrl}}/login
+Content-Type: {{contentType}}
+
+{
+  "email": "gerente.edificio.1776005372@example.com",
+  "password": "{{password}}"
+}
+
+### G3. Restaurar ocupación inicial capturada en B1
+PUT {{edificioUrl}}/ocupacion
+Content-Type: {{contentType}}
+
+{
+  "porcentajeOcupacionMaxima": {{getOcupacionInicial.response.body.porcentajeOcupacionMaxima}}
+}
+
+### G4. Verificar restauración final
+GET {{edificioUrl}}/ocupacion
