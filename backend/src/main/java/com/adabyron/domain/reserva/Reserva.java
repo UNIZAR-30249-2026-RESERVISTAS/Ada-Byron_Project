@@ -48,7 +48,7 @@ public class Reserva {
     // Constructor privado — solo desde factory
     protected Reserva() {} // para JPA
  
-    Reserva(ReservaId id, List<EspacioId> espacioIds, PersonaId reservadaPorId,
+    protected Reserva(ReservaId id, List<EspacioId> espacioIds, PersonaId reservadaPorId,
                     TipoUsoReserva tipoUso, int numeroAsistentes, IntervaloTemporal intervalo,
                     String detallesAdicionales) {
         if (espacioIds == null || espacioIds.isEmpty())
@@ -70,7 +70,7 @@ public class Reserva {
      * Constructor para rehidratación desde BD — estado restaurado.
      * Package-private: solo ReservaFactory puede instanciar Reserva.
      */
-    Reserva(ReservaId id, List<EspacioId> espacioIds, PersonaId reservadaPorId,
+    protected Reserva(ReservaId id, List<EspacioId> espacioIds, PersonaId reservadaPorId,
             TipoUsoReserva tipoUso, int numeroAsistentes, IntervaloTemporal intervalo,
             String detallesAdicionales, EstadoReserva estado,
             String motivoRechazoOCancelacion) {

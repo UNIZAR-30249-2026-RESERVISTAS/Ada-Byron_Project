@@ -2,6 +2,7 @@ package com.adabyron.infraestructure.persistence.persona;
 
 import com.adabyron.domain.persona.DepartamentoId;
 import com.adabyron.domain.persona.Persona;
+import com.adabyron.domain.persona.PersonaFactory;
 import com.adabyron.domain.persona.PersonaId;
 import com.adabyron.domain.persona.PersonaRepository;
 import com.adabyron.domain.persona.Rol;
@@ -92,7 +93,7 @@ public class PersonaRepositoryJpa implements PersonaRepository {
     }
     // Mapper para convertir de PersonaJpaEntity a Persona
     private Persona toDomain(PersonaJpaEntity entity) {
-        return new Persona(
+        return PersonaFactory.reconstruirPersona(
             new PersonaId(entity.getId()),
             entity.getNombre(),
             entity.getEmail(),
