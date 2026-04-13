@@ -10,8 +10,8 @@ POST {{baseUrl}}
 Content-Type: {{contentType}}
 
 {
-    "nombre": "Ana García",
-    "email": "ana.garcia@example.com",
+    "nombre": "Curro Valero",
+    "email": "842545@unizar.es",
     "password": "password123",
     "rol": "TECNICO_LABORATORIO",
     "departamentoId": 1
@@ -23,8 +23,8 @@ POST {{baseUrl}}
 Content-Type: {{contentType}}
 
 {
-    "nombre": "Arturo Sánchez",
-    "email": "arturo.sanchez@example.com",
+    "nombre": "Pedro",
+    "email": "pedro.sanchez@example.com",
     "password": "password123",
     "rol": "GERENTE",
     "departamentoId": null

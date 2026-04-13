@@ -24,8 +24,6 @@ import java.util.*;
  *   INV-1: Debe tener al menos un espacio.
  *   INV-2: El intervalo temporal es válido (mismo día, inicio < fin).
  *   INV-3: El número de asistentes es mayor que 0.
- *   INV-4: El estado sigue las transiciones del autómata finito.
- *   INV-5: Una reserva cancelada o rechazada no puede modificarse.
  */
 public class Reserva {
     // Identidad
