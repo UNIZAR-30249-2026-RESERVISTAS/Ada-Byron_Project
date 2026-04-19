@@ -6,6 +6,7 @@ public enum Rol {
     ESTUDIANTE,
     DOCENTE_INVESTIGADOR,
     INVESTIGADOR_CONTRATADO,
+    INVESTIGADOR_VISITANTE,
     CONSERJE,
     TECNICO_LABORATORIO,
     GERENTE;
@@ -17,7 +18,7 @@ public enum Rol {
      */
     public boolean requiereDepartamento() {
         return switch(this) {
-            case DOCENTE_INVESTIGADOR, INVESTIGADOR_CONTRATADO, TECNICO_LABORATORIO -> true;
+            case DOCENTE_INVESTIGADOR, INVESTIGADOR_CONTRATADO, TECNICO_LABORATORIO, INVESTIGADOR_VISITANTE -> true;
             case ESTUDIANTE, CONSERJE, GERENTE -> false;
         };
     }
@@ -44,6 +45,7 @@ public enum Rol {
             // Solo lo podrá reserver en caso de que el departamento del técnico de laboratorio coincida con el del espacio, pero esa lógica la implementaremos en el servicio de reserva, aquí solo comprobamos que el rol tiene permiso para reservar ese tipo de espacio.
             case TECNICO_LABORATORIO -> categoriaReserva == CategoriaReserva.LABORATORIO || categoriaReserva == CategoriaReserva.SEMINARIO;
             case GERENTE -> true; // El gerente puede reservar cualquier tipo de espacio.
+            case INVESTIGADOR_VISITANTE -> false; //Asumo que no puede reservar nada
         };
     }
 
@@ -55,6 +57,7 @@ public enum Rol {
             case ESTUDIANTE -> "Estudiante";
             case DOCENTE_INVESTIGADOR -> "Docente-Investigador";
             case INVESTIGADOR_CONTRATADO -> "Investigador Contratado";
+            case INVESTIGADOR_VISITANTE -> "Investigador Visitante";
             case CONSERJE -> "Conserje";
             case TECNICO_LABORATORIO -> "Técnico de Laboratorio";
             case GERENTE -> "Gerente";
