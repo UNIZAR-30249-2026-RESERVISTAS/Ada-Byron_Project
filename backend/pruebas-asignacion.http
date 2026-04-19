@@ -242,3 +242,104 @@ GET {{reservasUrl}}/persona/{{docenteDept1Id}}
 
 ### Ver reservas por persona para verificar el impacto de las asignaciones
 GET {{reservasUrl}}/persona/{{docenteDept2Id}}
+
+
+
+### ----------------------------------------------------------
+### 7) Pruebas REQ-F4 (Flexibilización Investigador Visitante)
+### ----------------------------------------------------------
+
+### Crear Investigador Visitante (Depto 1)
+# @name crearVisitanteDept1
+POST {{personasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Visitante Depto 1",
+  "email": "visitante.depto1@example.com",
+  "password": "password123",
+  "rol": "INVESTIGADOR_VISITANTE",
+  "departamentoId": 1
+}
+
+### Crear Gerente (Para probar la regla de que el gerente siempre pasa)
+# @name crearGerente
+POST {{personasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Gerente EINA",
+  "email": "gerente.eina@example.com",
+  "password": "password123",
+  "rol": "GERENTE",
+  "departamentoId": null
+}
+
+### Guardamos los IDs generados
+@visitanteDept1Id = {{crearVisitanteDept1.response.body.id}}
+@gerenteId = {{crearGerente.response.body.id}}
+
+### Asignar el despacho EXCLUSIVAMENTE al Investigador Visitante
+PUT {{baseUrl}}/{{despachoId}}/asignacion/personas
+Content-Type: {{contentType}}
+
+{
+  "personaIds": ["{{visitanteDept1Id}}"]
+}
+
+### Verificar asignación (Debería mostrar que pertenece a personas)
+GET {{baseUrl}}/{{despachoId}}/asignacion
+
+### ----------------------------------------------------------
+### 7.1) Gerente reserva despacho de visitante -> DEBE CONFIRMARSE (Pase VIP)
+### ----------------------------------------------------------
+# @name reservaGerenteVisitante
+POST {{reservasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{despachoId}}"],
+  "reservadaPorId": "{{gerenteId}}",
+  "tipoUso": "OTRO",
+  "numeroAsistentes": 2,
+  "fecha": "2026-12-16",
+  "horaInicio": "09:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Gerente reserva despacho de visitante sin importar depto"
+}
+
+### ----------------------------------------------------------
+### 7.2) Docente Depto 1 reserva despacho de visitante Depto 1 -> DEBE CONFIRMARSE
+### ----------------------------------------------------------
+# @name reservaDocenteMismoDeptoVisitante
+POST {{reservasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{despachoId}}"],
+  "reservadaPorId": "{{docenteDept1Id}}",
+  "tipoUso": "INVESTIGACION",
+  "numeroAsistentes": 2,
+  "fecha": "2026-12-16",
+  "horaInicio": "11:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Docente del mismo departamento que el visitante"
+}
+
+### ----------------------------------------------------------
+### 7.3) Docente Depto 2 reserva despacho de visitante Depto 1 -> DEBE FALLAR (RECHAZADA)
+### ----------------------------------------------------------
+# @name reservaDocenteDistintoDeptoVisitante
+POST {{reservasUrl}}
+Content-Type: {{contentType}}
+
+{
+  "espacioIds": ["{{despachoId}}"],
+  "reservadaPorId": "{{docenteDept2Id}}",
+  "tipoUso": "INVESTIGACION",
+  "numeroAsistentes": 2,
+  "fecha": "2026-12-16",
+  "horaInicio": "13:00",
+  "duracionMinutos": 60,
+  "detallesAdicionales": "Docente de distinto departamento, debe fallar"
+}

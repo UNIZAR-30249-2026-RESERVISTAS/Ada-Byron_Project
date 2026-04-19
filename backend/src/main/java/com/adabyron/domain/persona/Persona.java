@@ -48,6 +48,10 @@ public class Persona{
      * se retire el rol de GERENTE para mantener la coherencia de los roles.
      */
     public void cambiarRol (Rol nuevoRol, DepartamentoId nuevoDepartamento) {
+        if (tieneRol(Rol.INVESTIGADOR_VISITANTE)) {
+            throw new RolInmutable(Rol.INVESTIGADOR_VISITANTE);
+        }
+
         Rol rolAnterior = rolPrincipal();
 
         // Validamos la coherencia del nuevo rol con el departamento (INV-3, INV-4)

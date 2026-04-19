@@ -127,11 +127,12 @@ public class EspacioService {
 
                 boolean rolValido =
                     persona.tieneRol(Rol.INVESTIGADOR_CONTRATADO) ||
-                    persona.tieneRol(Rol.DOCENTE_INVESTIGADOR);
+                    persona.tieneRol(Rol.DOCENTE_INVESTIGADOR) ||
+                    persona.tieneRol(Rol.INVESTIGADOR_VISITANTE);
 
                 if (!rolValido) {
                     throw new IllegalArgumentException(
-                        "Solo se puede asignar a investigador contratado o docente-investigador. Persona: " + id + " no tiene un rol válido."
+                        "Solo se puede asignar a investigador contratado, docente-investigador o investigador visitante. Persona: " + id + " no tiene un rol válido."
                     );
                 }
                 return persona.getPersonaId();
