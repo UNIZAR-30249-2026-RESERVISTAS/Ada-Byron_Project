@@ -72,10 +72,10 @@ GET {{baseUrl}}
 
 ### 4. Buscar reserva por ID (FUNCIONA BIEN)
 ###    (sustituye por un UUID real tras crear una)
-GET {{baseUrl}}/2d77ebfa-3325-4a7a-a3aa-960a8774feb8
+GET {{baseUrl}}/1005061d-49b6-419b-b59e-889e3bbc1ae3
 
 ### 5. Listar reservas de una persona (FUNCIONA BIEN)
-GET {{baseUrl}}/persona/8124f18a-b69f-428b-b235-ddfb4979ace9
+GET {{baseUrl}}/persona/193b9e0d-addf-4662-b95b-c9734fc6c507
 
 ### 6. Listar potencialmente inválidas (O4)
 GET {{baseUrl}}/potencialmente-invalidas

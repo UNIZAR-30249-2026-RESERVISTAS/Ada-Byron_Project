@@ -3,11 +3,11 @@ package com.adabyron.infraestructure.web;
 import java.util.List;
 import java.util.UUID;
 
-import com.adabyron.application.reserva.CrearReservaDTO;
-import com.adabyron.application.reserva.ReservaDTO;
-import com.adabyron.application.reserva.ReservaService;
+import com.adabyron.application.reserva.*;
 import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,17 +24,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.Collection;
+import java.util.concurrent.TimeoutException;
 
 
 @RestController
 @RequestMapping("/api/reservas")
 @Tag(name = "Reservas", description = "Gestión de reservas de espacios: creación, consulta, cancelación y revalidación")
 public class ReservaController {
+    private final RabbitTemplate rabbitTemplate;
  
-    private final ReservaService reservaService;
- 
-    public ReservaController(ReservaService reservaService) {
-        this.reservaService = reservaService;
+    public ReservaController(ReservaService reservaService, RabbitTemplate rabbitTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     private UUID requirePersonaId(HttpServletRequest request) {
@@ -96,12 +96,15 @@ public class ReservaController {
         )
     })
     @PostMapping
-    public ResponseEntity<ReservaDTO> crear(@RequestBody CrearReservaDTO dto) {
-        //System.out.println("DTO en el crear:");
-        //System.out.println(dto);
-        var reserva = reservaService.crearReserva(dto);
+    public ResponseEntity<ReservaDTO> crear(@RequestBody CrearReservaDTO dto) throws TimeoutException {
+        //var reserva = reservaService.crearReserva(dto);
+        //ReservaDTO reservaDTO = ReservaDTO.fromEntity(reservaConfirmada);
+
+        Object respuesta = rabbitTemplate.convertSendAndReceive("reserva.crear", dto);
+        if (respuesta == null) { throw new TimeoutException(); }
+        ReservaDTO reservaConfirmada = (ReservaDTO) respuesta;
         return ResponseEntity.status(HttpStatus.CREATED)
-                             .body(ReservaDTO.fromEntity(reserva));
+                             .body(reservaConfirmada);
     }
  
     @Operation(
@@ -121,11 +124,21 @@ public class ReservaController {
         )
     })
     @GetMapping
-    public List<ReservaDTO> listarActivas(HttpServletRequest request) {
+    public List<ReservaDTO> listarActivas(HttpServletRequest request) throws TimeoutException {
         requireGerente(request);
-        return reservaService.listarReservasActivas().stream()
-                             .map(ReservaDTO::fromEntity)
-                             .toList();
+
+        ParameterizedTypeReference<List<ReservaDTO>> tipoRespuesta =
+                new ParameterizedTypeReference<>() {
+                };
+
+        List<ReservaDTO> activas = rabbitTemplate.convertSendAndReceiveAsType("reserva.listar.activas", "Listar", tipoRespuesta);
+
+        if (activas == null) { throw new TimeoutException(); }
+
+        //return reservaService.listarReservasActivas().stream()
+        //                     .map(ReservaDTO::fromEntity)
+        //                     .toList();
+        return activas;
     }
  
     @Operation(
@@ -151,8 +164,15 @@ public class ReservaController {
     public ReservaDTO buscarPorId(
         @Parameter(description = "UUID de la reserva", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
         @PathVariable UUID id
-    ) {
-        return ReservaDTO.fromEntity(reservaService.buscarPorId(id));
+    ) throws TimeoutException {
+        Object respuesta = rabbitTemplate.convertSendAndReceive("reserva.buscar.porId", id);
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (ReservaDTO) respuesta;
+        //return ReservaDTO.fromEntity(reservaService.buscarPorId(id));
     }
  
     @Operation(
@@ -175,11 +195,22 @@ public class ReservaController {
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
         @PathVariable UUID personaId,
         HttpServletRequest request
-    ) {
+    ) throws TimeoutException {
         requireMismoUsuarioOGerente(request, personaId);
-        return reservaService.listarPorPersona(personaId).stream()
-                             .map(ReservaDTO::fromEntity)
-                             .toList();
+
+        ParameterizedTypeReference<List<ReservaDTO>> tipoRespuesta =
+                new ParameterizedTypeReference<>() {
+                };
+
+        List<ReservaDTO> lista = rabbitTemplate.convertSendAndReceiveAsType("reserva.listar.porPersona", personaId, tipoRespuesta);
+
+        if (lista == null) { throw new TimeoutException(); }
+
+        return lista;
+
+        //return reservaService.listarPorPersona(personaId).stream()
+        //                     .map(ReservaDTO::fromEntity)
+        //                     .toList();
     }
 
     @Operation(
@@ -201,11 +232,23 @@ public class ReservaController {
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
         @PathVariable UUID personaId,
         HttpServletRequest request
-    ) {
+    ) throws TimeoutException {
         requireMismoUsuarioOGerente(request, personaId);
-        return reservaService.listarActivasPorPersona(personaId).stream()
-                .map(ReservaDTO::fromEntity)
-                             .toList();
+
+        ParameterizedTypeReference<List<ReservaDTO>> tipoRespuesta =
+                new ParameterizedTypeReference<>() {
+                };
+
+        List<ReservaDTO> lista = rabbitTemplate.convertSendAndReceiveAsType("reserva.listar.activas.porPersona", personaId, tipoRespuesta);
+
+        if (lista == null) { throw new TimeoutException(); }
+
+        return lista;
+
+
+        //return reservaService.listarActivasPorPersona(personaId).stream()
+        //        .map(ReservaDTO::fromEntity)
+        //                     .toList();
     }
  
     @Operation(
@@ -226,11 +269,23 @@ public class ReservaController {
         )
     })
     @GetMapping("/potencialmente-invalidas")
-    public List<ReservaDTO> listarPotencialmenteInvalidas(HttpServletRequest request) {
-        requireGerente(request);    
-        return reservaService.listarPotencialmenteInvalidas().stream()
-                             .map(ReservaDTO::fromEntity)
-                             .toList();
+    public List<ReservaDTO> listarPotencialmenteInvalidas(HttpServletRequest request) throws TimeoutException {
+        requireGerente(request);
+
+        ParameterizedTypeReference<List<ReservaDTO>> tipoRespuesta =
+                new ParameterizedTypeReference<>() {
+                };
+
+        List<ReservaDTO> lista = rabbitTemplate.convertSendAndReceiveAsType("reserva.listar.potencialmenteInvalidas", "Listar", tipoRespuesta);
+
+
+        if (lista == null) { throw new TimeoutException(); }
+
+        return lista;
+
+        //return reservaService.listarPotencialmenteInvalidas().stream()
+        //                     .map(ReservaDTO::fromEntity)
+        //                     .toList();
     }
  
     @Operation(
@@ -271,15 +326,27 @@ public class ReservaController {
         @Parameter(description = "UUID del gerente que ejecuta la revalidación", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
         @RequestParam UUID gerenteId,
         HttpServletRequest request
-    ) {
+    ) throws TimeoutException {
         UUID personaSesion = requirePersonaId(request);
         requireGerente(request);
 
         if (!personaSesion.equals(gerenteId)) {
             throw new OperacionNoAutorizadaException("No puedes revalidar usando el gerenteId de otro usuario");
         }
-            return ReservaDTO.fromEntity(reservaService.revalidarReserva(id, gerenteId));
+
+        //return ReservaDTO.fromEntity(reservaService.revalidarReserva(id, gerenteId));
+
+        RevalidarReservaCommand comando = new RevalidarReservaCommand(id, gerenteId);
+
+        Object respuesta = rabbitTemplate.convertSendAndReceive("reserva.revalidar", comando);
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
         }
+
+        ReservaDTO reservaRevalidada = (ReservaDTO) respuesta;
+        return reservaRevalidada;
+    }
  
     @Operation(
         summary = "Cancelar una reserva",
@@ -320,8 +387,18 @@ public class ReservaController {
         @RequestParam UUID solicitanteId,
         @Parameter(description = "Motivo de la cancelación (opcional)", example = "El espacio ya no está disponible")
         @RequestParam(required = false) String motivo
-    ) {
-        reservaService.cancelarReserva(id, solicitanteId, motivo);
+    ) throws TimeoutException {
+        //reservaService.cancelarReserva(id, solicitanteId, motivo);
+        //return ResponseEntity.noContent().build();
+
+        CancelarReservaCommand comando = new CancelarReservaCommand(id, solicitanteId, motivo);
+
+        Object confirmacion = rabbitTemplate.convertSendAndReceive("reserva.cancelar", comando);
+
+        if (confirmacion == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
         return ResponseEntity.noContent().build();
     }
 
@@ -358,8 +435,24 @@ public class ReservaController {
         @PathVariable UUID id,
         @Parameter(description = "UUID de la persona que ejecuta la eliminación", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
         @RequestParam UUID solicitanteId
-    ) {
-        reservaService.eliminarReserva(id, solicitanteId);
+    ) throws TimeoutException {
+        //reservaService.eliminarReserva(id, solicitanteId);
+        //return ResponseEntity.noContent().build();
+
+        EliminarReservaCommand comando = new EliminarReservaCommand(id, solicitanteId);
+
+        Object confirmacion = rabbitTemplate.convertSendAndReceive("reserva.eliminar", comando);
+
+        if (confirmacion == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
         return ResponseEntity.noContent().build();
+    }
+
+    @ResponseStatus(value = HttpStatus.REQUEST_TIMEOUT)
+    @ExceptionHandler(TimeoutException.class)
+    public String timeout() {
+        return "La petición no puede resolverse ahora, el servidor de reservas no responde.";
     }
 }
