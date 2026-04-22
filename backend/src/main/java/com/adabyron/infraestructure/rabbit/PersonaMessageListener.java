@@ -1,14 +1,9 @@
 package com.adabyron.infraestructure.rabbit;
 
 import com.adabyron.application.persona.*;
-import com.adabyron.application.reserva.ReservaDTO;
-import com.adabyron.application.reserva.RevalidarReservaCommand;
 import com.adabyron.domain.persona.Persona;
-import com.adabyron.domain.persona.exception.DepartamentoNoPermitidoException;
 import com.adabyron.domain.persona.exception.DepartamentoRequeridoException;
 import com.adabyron.domain.persona.exception.PersonaNotFoundException;
-import com.adabyron.domain.reserva.Reserva;
-import com.adabyron.domain.reserva.exception.ReservaNotFoundException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 

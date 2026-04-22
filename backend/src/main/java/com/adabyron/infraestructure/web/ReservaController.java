@@ -33,7 +33,7 @@ import java.util.concurrent.TimeoutException;
 public class ReservaController {
     private final RabbitTemplate rabbitTemplate;
  
-    public ReservaController(ReservaService reservaService, RabbitTemplate rabbitTemplate) {
+    public ReservaController(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
     }
 

@@ -13,15 +13,24 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 @RestController
 @RequestMapping("/api/departamentos")
 @Tag(name = "Departamentos", description = "Consulta del catálogo de departamentos disponibles en el sistema")
 public class DepartamentoController {
+
+    private final RabbitTemplate rabbitTemplate;
+
+    public DepartamentoController(RabbitTemplate rabbitTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
+    }
 
     @Operation(
         summary = "Listar todos los departamentos",
@@ -39,10 +48,22 @@ public class DepartamentoController {
         )
     })
     @GetMapping
-    public List<DepartamentoDTO> listarTodos() {
+    public List<DepartamentoDTO> listarTodos() throws TimeoutException {
         return Departamento.values().stream()
                 .map(DepartamentoDTO::fromEntity)
                 .toList();
+
+        /*
+        ParameterizedTypeReference<List<DepartamentoDTO>> tipoRespuesta =
+                new ParameterizedTypeReference<>() {
+                };
+        List<DepartamentoDTO> lista =
+                rabbitTemplate.convertSendAndReceiveAsType("departamento.listar", "Listar", tipoRespuesta);
+
+        if (lista == null) { throw new TimeoutException(); }
+
+        return lista;
+        */
     }
 
     @Operation(

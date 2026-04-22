@@ -99,5 +99,19 @@ public class RabbitMQConfig {
     @Bean
     public Queue queueEliminarPersona() { return new Queue("persona.eliminar"); }
 
+    //Colas para el controlador de Departamento
+    @Bean
+    public Queue queueListarDepartamentos() { return new Queue("departamento.listar"); }
+
+    @Bean
+    public Queue queueBuscarDepartamentoPorId() { return new Queue("departamento.buscar.porId"); }
+
+    //Colas para el controlador de Edificio
+    @Bean
+    public Queue queuePorcentajeOcupacionEdifico(){ return new Queue("edificio.porcentajeOcupacion"); }
+
+    @Bean
+    public Queue queueCambiarPorcentajeOcupacionEdificio(){ return new Queue("edificio.cambiarPorcentajeOcupacion"); }
+
 
 }

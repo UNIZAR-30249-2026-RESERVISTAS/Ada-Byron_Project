@@ -32,12 +32,9 @@ import java.util.concurrent.TimeoutException;
 @Tag(name = "Personas", description = "Gestión de personas: creación, consulta, asignación de roles y eliminación")
 public class PersonaController {
 
-    private final PersonaService personaService;
-
     private final RabbitTemplate rabbitTemplate;
 
-    public PersonaController(PersonaService personaService, RabbitTemplate rabbitTemplate) {
-        this.personaService = personaService;
+    public PersonaController(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
     }
     // Funciones auxiliares para autorización basada en sesión
