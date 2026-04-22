@@ -344,8 +344,7 @@ public class ReservaController {
             throw new TimeoutException("El servidor de aplicaciones no responde.");
         }
 
-        ReservaDTO reservaRevalidada = (ReservaDTO) respuesta;
-        return reservaRevalidada;
+        return (ReservaDTO) respuesta;
     }
  
     @Operation(

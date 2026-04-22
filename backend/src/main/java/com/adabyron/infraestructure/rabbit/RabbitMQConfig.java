@@ -23,6 +23,7 @@ public class RabbitMQConfig {
         return template;
     }
 
+    //Colas para el controlador de Reserva
     @Bean
     public Queue queueCrearReserva() {
         return new Queue("reserva.crear");
@@ -67,4 +68,36 @@ public class RabbitMQConfig {
     public Queue queueRevalidarReserva() {
         return new Queue("reserva.revalidar");
     }
+
+    //Colas para el controlador de Persona
+    @Bean
+    public Queue queueCrearPersona() {
+        return new Queue("persona.crear");
+    }
+
+    @Bean
+    public Queue queueListarPersonas() { return new Queue("persona.listar"); }
+
+    @Bean
+    public Queue queueBuscarPersonaPorId() { return new Queue("persona.buscar.porId"); }
+
+    @Bean
+    public Queue queueBuscarPersonaPorEmail() { return new Queue("persona.buscar.porEmail"); }
+
+    @Bean
+    public Queue queueCambiarRolPersona() { return new Queue("persona.cambiarRol"); }
+
+    @Bean
+    public Queue queueAñadirGerente() { return new Queue("persona.añadirGerente"); }
+
+    @Bean
+    public Queue queueQuitarGerente() { return new Queue("persona.quitarGerente"); }
+
+    @Bean
+    public Queue queueCambiarDepartamento() { return new Queue("persona.cambiarDepartamento"); }
+
+    @Bean
+    public Queue queueEliminarPersona() { return new Queue("persona.eliminar"); }
+
+
 }

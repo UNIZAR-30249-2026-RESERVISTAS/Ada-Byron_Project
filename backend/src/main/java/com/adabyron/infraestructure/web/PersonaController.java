@@ -1,6 +1,7 @@
 package com.adabyron.infraestructure.web;
 
 import com.adabyron.application.persona.*;
+import com.adabyron.application.reserva.ReservaDTO;
 import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.Collection;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
 @RestController
 @RequestMapping("/api/personas")
@@ -30,8 +34,11 @@ public class PersonaController {
 
     private final PersonaService personaService;
 
-    public PersonaController(PersonaService personaService) {
+    private final RabbitTemplate rabbitTemplate;
+
+    public PersonaController(PersonaService personaService, RabbitTemplate rabbitTemplate) {
         this.personaService = personaService;
+        this.rabbitTemplate = rabbitTemplate;
     }
     // Funciones auxiliares para autorización basada en sesión
     private UUID requirePersonaId(HttpServletRequest request) {
@@ -84,9 +91,15 @@ public class PersonaController {
         )
     })
     @PostMapping
-    public ResponseEntity<PersonaDTO> crear(@RequestBody CrearPersonaDTO dto) {
-        var persona = personaService.crearPersona(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(PersonaDTO.fromEntity(persona));
+    public ResponseEntity<PersonaDTO> crear(@RequestBody CrearPersonaDTO dto) throws TimeoutException {
+        //var persona = personaService.crearPersona(dto);
+        //return ResponseEntity.status(HttpStatus.CREATED).body(PersonaDTO.fromEntity(persona));
+
+        Object respuesta = rabbitTemplate.convertSendAndReceive("persona.crear", dto);
+        if (respuesta == null) { throw new TimeoutException(); }
+        PersonaDTO personaConfirmada = (PersonaDTO) respuesta;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(personaConfirmada);
     }
 
     @Operation(
@@ -104,11 +117,22 @@ public class PersonaController {
         )
     })
     @GetMapping
-    public List<PersonaDTO> listarTodas(HttpServletRequest request) {
+    public List<PersonaDTO> listarTodas(HttpServletRequest request) throws TimeoutException {
         requireGerente(request);
-        return personaService.listarTodas().stream()
-                .map(PersonaDTO::fromEntity)
-                .toList();
+        //return personaService.listarTodas().stream()
+        //        .map(PersonaDTO::fromEntity)
+        //        .toList();
+
+        ParameterizedTypeReference<List<PersonaDTO>> tipoRespuesta =
+                new ParameterizedTypeReference<>() {
+                };
+        List<PersonaDTO> lista = rabbitTemplate.convertSendAndReceiveAsType("persona.listar", "Listar", tipoRespuesta);
+
+        if (lista == null) { throw new TimeoutException(); }
+
+        return lista;
+
+
     }
 
     @Operation(
@@ -130,8 +154,15 @@ public class PersonaController {
     public PersonaDTO buscarPorId(
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
         @PathVariable UUID id
-    ) {
-        return PersonaDTO.fromEntity(personaService.buscarPorId(id));
+    ) throws TimeoutException {
+        //return PersonaDTO.fromEntity(personaService.buscarPorId(id));
+        Object respuesta = rabbitTemplate.convertSendAndReceive("persona.buscar.porId", id);
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (PersonaDTO) respuesta;
     }
 
     @Operation(
@@ -153,8 +184,16 @@ public class PersonaController {
     public PersonaDTO buscarPorEmail(
         @Parameter(description = "Email de la persona", example = "usuario@ejemplo.com", required = true)
         @PathVariable String email
-    ) {
-        return PersonaDTO.fromEntity(personaService.buscarPorEmail(email));
+    ) throws TimeoutException {
+        //return PersonaDTO.fromEntity(personaService.buscarPorEmail(email));
+
+        Object respuesta = rabbitTemplate.convertSendAndReceive("persona.buscar.porEmail", email);
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (PersonaDTO) respuesta;
     }
 
     @Operation(
@@ -179,9 +218,16 @@ public class PersonaController {
         @PathVariable UUID id,
         @RequestBody CambiarRolDTO dto,
         HttpServletRequest request
-    ) {
+    ) throws TimeoutException {
         requireGerente(request);
-        return PersonaDTO.fromEntity(personaService.cambiarRol(id, dto));
+        //return PersonaDTO.fromEntity(personaService.cambiarRol(id, dto));
+        CambiarRolCommand comando = new CambiarRolCommand(id, dto);
+        Object respuesta = rabbitTemplate.convertSendAndReceive("persona.cambiarRol", comando);
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (PersonaDTO) respuesta;
     }
 
     @Operation(
@@ -204,9 +250,14 @@ public class PersonaController {
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
         @PathVariable UUID id,
         HttpServletRequest request
-    ) {
+    ) throws TimeoutException {
         requireGerente(request);
-        return PersonaDTO.fromEntity(personaService.añadirRolGerente(id));
+        //return PersonaDTO.fromEntity(personaService.añadirRolGerente(id));
+        Object respuesta = rabbitTemplate.convertSendAndReceive("persona.añadirGerente", id);
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+        return (PersonaDTO) respuesta;
     }
 
     @Operation(
@@ -229,9 +280,14 @@ public class PersonaController {
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
         @PathVariable UUID id,
         HttpServletRequest request
-    ) {
+    ) throws TimeoutException {
         requireGerente(request);
-        return PersonaDTO.fromEntity(personaService.quitarRolGerente(id));
+        //return PersonaDTO.fromEntity(personaService.quitarRolGerente(id));
+        Object respuesta = rabbitTemplate.convertSendAndReceive("persona.quitarGerente", id);
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+        return (PersonaDTO) respuesta;
     }
 
     @Operation(
@@ -257,9 +313,16 @@ public class PersonaController {
         @PathVariable UUID id,
         @RequestBody CambiarDepartamentoDTO dto,
         HttpServletRequest request
-    ) {
+    ) throws TimeoutException {
         requireGerente(request);
-        return PersonaDTO.fromEntity(personaService.cambiarDepartamento(id, dto));
+        //return PersonaDTO.fromEntity(personaService.cambiarDepartamento(id, dto));
+        CambiarDepartamentoCommand comando = new CambiarDepartamentoCommand(id, dto);
+        Object respuesta = rabbitTemplate.convertSendAndReceive("persona.cambiarDepartamento", comando);
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (PersonaDTO) respuesta;
     }
 
     @Operation(
@@ -275,9 +338,23 @@ public class PersonaController {
         @Parameter(description = "UUID de la persona", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
         @PathVariable UUID id,
         HttpServletRequest request
-    ) {
+    ) throws TimeoutException {
         requireGerente(request);
-        personaService.eliminar(id);
+        //personaService.eliminar(id);
+        //return ResponseEntity.noContent().build();
+
+        Object confirmacion = rabbitTemplate.convertSendAndReceive("persona.eliminar", id);
+
+        if (confirmacion == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
         return ResponseEntity.noContent().build();
+    }
+
+    @ResponseStatus(value = HttpStatus.REQUEST_TIMEOUT)
+    @ExceptionHandler(TimeoutException.class)
+    public String timeout() {
+        return "La petición no puede resolverse ahora, el servidor de personas no responde.";
     }
 }
