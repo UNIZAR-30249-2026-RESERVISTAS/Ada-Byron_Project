@@ -43,6 +43,9 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+    implementation ("org.springframework.boot:spring-boot-starter-amqp")
+    testImplementation ("org.springframework.amqp:spring-rabbit-test")
+
 
     implementation("org.springframework.boot:spring-boot-starter-mail")
 }

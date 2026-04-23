@@ -135,7 +135,7 @@ public class EspacioService {
                         "Solo se puede asignar a investigador contratado, docente-investigador o investigador visitante. Persona: " + id + " no tiene un rol válido."
                     );
                 }
-                return persona.getPersonaId();
+                return persona.getPersonaId();  
             })
             .collect(Collectors.toSet());
 

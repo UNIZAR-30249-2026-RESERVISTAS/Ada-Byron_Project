@@ -6,19 +6,26 @@ import com.adabyron.application.edificio.EdificioService;
 import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
 @RestController
 @RequestMapping("/api/edificio")
 public class EdificioController {
 
     private final EdificioService edificioService;
+    private final RabbitTemplate rabbitTemplate;
 
-    public EdificioController(EdificioService edificioService) {
+    public EdificioController(EdificioService edificioService, RabbitTemplate rabbitTemplate) {
+
         this.edificioService = edificioService;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     private UUID requirePersonaId(HttpServletRequest request) {
@@ -46,17 +53,39 @@ public class EdificioController {
     }
 
     @GetMapping("/ocupacion")
-    public EdificioOcupacionDTO obtenerPorcentajeOcupacion() {
-        return new EdificioOcupacionDTO(edificioService.obtenerPorcentajeOcupacionMaxima());
+    public EdificioOcupacionDTO obtenerPorcentajeOcupacion() throws TimeoutException {
+        //return new EdificioOcupacionDTO(edificioService.obtenerPorcentajeOcupacionMaxima());
+
+        Object respuesta = rabbitTemplate.convertSendAndReceive("edificio.porcentajeOcupacion", "GET");
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servicio de aplicaciones no responde");
+        }
+
+        return (EdificioOcupacionDTO) respuesta;
     }
 
     @PutMapping("/ocupacion")
     public EdificioOcupacionDTO cambiarPorcentajeOcupacion(
             @RequestBody CambiarPorcentajeOcupacionDTO dto,
             HttpServletRequest request
-    ) {
+    ) throws TimeoutException {
         requireGerente(request);
-        double nuevo = edificioService.cambiarPorcentajeOcupacionMaxima(dto);
-        return new EdificioOcupacionDTO(nuevo);
+        //double nuevo = edificioService.cambiarPorcentajeOcupacionMaxima(dto);
+        //return new EdificioOcupacionDTO(nuevo);
+
+        Object respuesta = rabbitTemplate.convertSendAndReceive("edificio.cambiarPorcentajeOcupacion", dto);
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servicio de aplicaciones no responde");
+        }
+
+        return (EdificioOcupacionDTO) respuesta;
+    }
+
+    @ResponseStatus(value = HttpStatus.REQUEST_TIMEOUT)
+    @ExceptionHandler(TimeoutException.class)
+    public String timeout() {
+        return "La petición no puede resolverse ahora, el servidor de personas no responde.";
     }
 }
