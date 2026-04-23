@@ -3,6 +3,7 @@ package com.adabyron.infraestructure.rabbit;
 import com.adabyron.application.edificio.CambiarPorcentajeOcupacionDTO;
 import com.adabyron.application.edificio.EdificioOcupacionDTO;
 import com.adabyron.application.edificio.EdificioService;
+import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -24,7 +25,7 @@ public class EdificioMessageListener {
     public EdificioOcupacionDTO onCambiarOcupacion(CambiarPorcentajeOcupacionDTO dto) {
         try {
             return new EdificioOcupacionDTO(edificioService.cambiarPorcentajeOcupacionMaxima(dto));
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | OperacionNoAutorizadaException ex) {
             throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
         }
     }

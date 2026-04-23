@@ -113,5 +113,39 @@ public class RabbitMQConfig {
     @Bean
     public Queue queueCambiarPorcentajeOcupacionEdificio(){ return new Queue("edificio.cambiarPorcentajeOcupacion"); }
 
+    //Colas para el controlador de Espacio
+    @Bean
+    public Queue queueBuscarEspacioPorId() { return new Queue("espacio.buscar.porId"); }
+
+    @Bean
+    public Queue queueCambiarCategoria() { return new Queue("espacio.cambiarCategoria"); }
+
+    @Bean
+    public Queue queueCambiarEstado() { return new Queue("espacio.cambiarEstado"); }
+
+    @Bean
+    public Queue queueObtenerHorario() { return new Queue("espacio.obtenerHorario"); }
+
+    @Bean
+    public Queue queueCambiarHorario() { return new Queue("espacio.cambiarHorario"); }
+
+    @Bean
+    public Queue queueRestablecerHorario() { return new Queue("espacio.restablecerHorario"); }
+
+    @Bean
+    public Queue queueObtenerAsignacion() { return new Queue("espacio.obtenerAsignacion"); }
+
+    @Bean
+    public Queue queueAsignarAEina() { return new Queue("espacio.asignarAEina"); }
+
+    @Bean
+    public Queue queueAsignarADepartamento() { return new Queue("espacio.asignarADepartamento"); }
+
+    @Bean
+    public Queue queueAsignarAPersonas() { return new Queue("espacio.asignarAPersonas"); }
+
+
+
+
 
 }

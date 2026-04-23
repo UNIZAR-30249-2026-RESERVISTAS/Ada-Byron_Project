@@ -1,6 +1,7 @@
 package com.adabyron.infraestructure.rabbit;
 
 import com.adabyron.application.reserva.*;
+import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
 import com.adabyron.domain.reserva.exception.ReservaNotFoundException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -98,7 +99,7 @@ public class ReservaMessageListener {
             );
 
             return "OK";
-        } catch (IllegalArgumentException | ReservaNotFoundException ex) {
+        } catch (IllegalArgumentException | ReservaNotFoundException | OperacionNoAutorizadaException ex) {
             throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
         }
     }
@@ -112,7 +113,7 @@ public class ReservaMessageListener {
             );
             return ReservaDTO.fromEntity(reserva);
 
-        } catch (IllegalArgumentException | ReservaNotFoundException ex) {
+        } catch (IllegalArgumentException | ReservaNotFoundException | OperacionNoAutorizadaException ex) {
             throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
         }
     }

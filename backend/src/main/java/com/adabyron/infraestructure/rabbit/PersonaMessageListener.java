@@ -4,6 +4,7 @@ import com.adabyron.application.persona.*;
 import com.adabyron.domain.persona.Persona;
 import com.adabyron.domain.persona.exception.DepartamentoRequeridoException;
 import com.adabyron.domain.persona.exception.PersonaNotFoundException;
+import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 
@@ -67,7 +68,7 @@ public class PersonaMessageListener {
             );
             return PersonaDTO.fromEntity(persona);
 
-        } catch (IllegalArgumentException | PersonaNotFoundException ex) {
+        } catch (IllegalArgumentException | OperacionNoAutorizadaException | PersonaNotFoundException ex) {
             throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
         }
     }
@@ -77,7 +78,7 @@ public class PersonaMessageListener {
         try{
             Persona persona = personaService.añadirRolGerente(id);
             return PersonaDTO.fromEntity(persona);
-        } catch(IllegalArgumentException | PersonaNotFoundException | IllegalStateException ex){
+        } catch(IllegalArgumentException | PersonaNotFoundException | OperacionNoAutorizadaException | IllegalStateException ex){
             throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
         }
     }
@@ -87,7 +88,7 @@ public class PersonaMessageListener {
         try{
             Persona persona = personaService.quitarRolGerente(id);
             return PersonaDTO.fromEntity(persona);
-        } catch(IllegalArgumentException | PersonaNotFoundException ex){
+        } catch(IllegalArgumentException | PersonaNotFoundException | OperacionNoAutorizadaException ex){
             throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
         }
     }
@@ -101,7 +102,7 @@ public class PersonaMessageListener {
             );
             return PersonaDTO.fromEntity(persona);
 
-        } catch (IllegalArgumentException | PersonaNotFoundException ex) {
+        } catch (IllegalArgumentException | PersonaNotFoundException | OperacionNoAutorizadaException ex) {
             throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
         }
     }
@@ -111,7 +112,7 @@ public class PersonaMessageListener {
         try {
             personaService.eliminar(id);
             return "OK";
-        } catch (IllegalArgumentException | PersonaNotFoundException ex) {
+        } catch (IllegalArgumentException | PersonaNotFoundException | OperacionNoAutorizadaException ex) {
             throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
         }
     }
