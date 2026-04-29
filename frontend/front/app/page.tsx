@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { LogOut, User, Users, BookMarked } from 'lucide-react';
 import { getCurrentUser, logoutUser, checkSession } from '../src/services/auth';
-import { reservarEspacio } from './actions';
+import { reservarEspacio, reservarPorCriterios } from './actions';
 
 
 interface ReservaData {
@@ -34,6 +34,11 @@ export default function PaginaPrincipal() {
   const [filterId, setFilterId] = useState('');
   const [filterOcupantes, setFilterOcupantes] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modoReserva, setModoReserva] = useState<'ids' | 'criterios'>('ids');
+  const [numEspacios, setNumEspacios] = useState('');
+  const [capacidadTotal, setCapacidadTotal] = useState('');
+  const [numSalas, setNumSalas] = useState('');
+  const [ocupantesMax, setOcupantesMax] = useState('');
   const [modalContent, setModalContent] = useState<ReservaData>({
     espacioIds: '',
     tipoUso: '',
@@ -43,7 +48,10 @@ export default function PaginaPrincipal() {
     duracionMinutos: 0,
     detallesAdicionales: ''
   });
-  const [state, formAction, isPending] = useActionState(reservarEspacio, null);
+    const [state, formAction, isPending] = useActionState(
+      modoReserva === 'ids' ? reservarEspacio : reservarPorCriterios,
+      null
+    );
   const [user, setUser] = useState<any>(null);
   const [mostrarPopUp, setMostrarPopUp] = useState(false);
   const [tipoUso, setTipoUso] = useState('');
@@ -109,7 +117,42 @@ export default function PaginaPrincipal() {
     setUser(getCurrentUser());
   }, []);
 
+   const handleSubmit = async (e: React.FormEvent) => {
+     e.preventDefault();
 
+     const form = e.currentTarget;
+     const formData = new FormData(form);
+
+     let result;
+
+     if (modoReserva === 'ids') {
+       result = await reservarEspacio({
+         reservadaPorId: formData.get('reservadaPorId'),
+         espacioIds: formData.get('espacioIds'),
+         tipoUso: formData.get('tipoUso'),
+         numeroAsistentes: Number(formData.get('numeroAsistentes')),
+         fecha: formData.get('fecha'),
+         horaInicio: formData.get('horaInicio'),
+         duracionMinutos: Number(formData.get('duracionMinutos')),
+         detallesAdicionales: formData.get('detallesAdicionales'),
+       });
+     } else {
+       result = await reservarPorCriterios({
+         reservadaPorId: formData.get('reservadaPorId'),
+         numEspacios: Number(formData.get('numEspacios')),
+         capacidadTotal: Number(formData.get('capacidadTotal')),
+         fecha: formData.get('fecha'),
+         horaInicio: formData.get('horaInicio'),
+         duracionMinutos: Number(formData.get('duracionMinutos')),
+       });
+     }
+
+     if (result?.success) {
+       setMostrarPopUp(true);
+       setIsModalOpen(false);
+       setTimeout(() => setMostrarPopUp(false), 3000);
+     }
+   };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -410,22 +453,50 @@ export default function PaginaPrincipal() {
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
 
-            <form className="space-y-4" action={formAction}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+
+              <div className="flex gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setModoReserva('ids')}
+                  className={`px-3 py-1 rounded ${
+                    modoReserva === 'ids' ? 'bg-[#1B2A4A] text-white' : 'bg-white'
+                  }`}
+                >
+                  Por IDs
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModoReserva('criterios')}
+                  className={`px-3 py-1 rounded ${
+                    modoReserva === 'criterios' ? 'bg-[#1B2A4A] text-white' : 'bg-white'
+                  }`}
+                >
+                  Por criterios
+                </button>
+              </div>
 
               <input type="hidden" name="reservadaPorId" value={user?.id || ''} />
 
               {/* Espacios IDs (Vector) */}
-              <div>
-                <label className="block text-[11px] text-[#6B6560] uppercase mb-1">IDs de Espacios (separados por coma)</label>
-                <input
-                  type="text"
-                  name="espacioIds"
-                  placeholder="101, 102..."
-                  value={modalContent.espacioIds}
-                  onChange={handleChange}
-                  className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md focus:ring-2 focus:ring-[#3B6FD4] outline-none text-[13px] placeholder-gray-400 text-[#1B2A4A]"
-                />
-              </div>
+              {modoReserva === 'ids' && (
+                  <>
+                <div>
+                  <label className="block text-[11px] text-[#6B6560] uppercase mb-1">
+                    IDs de Espacios (separados por coma)
+                  </label>
+
+                  <input
+                    type="text"
+                    name="espacioIds"
+                    placeholder="101, 102..."
+                    value={modalContent.espacioIds}
+                    onChange={handleChange}
+                    className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md"
+                  />
+                </div>
+
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Tipo de Uso */}
@@ -532,6 +603,33 @@ export default function PaginaPrincipal() {
                   placeholder="Indique detalles adicionales"
                 ></textarea>
               </div>
+              </>
+              )}
+              {modoReserva === 'criterios' && (
+                                <div className="space-y-3">
+                                  <div>
+                                    <label className="block text-[11px] text-[#6B6560] uppercase mb-1">
+                                      Número de espacios
+                                    </label>
+
+                                    <input
+                                      type="number"
+                                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[11px] text-[#6B6560] uppercase mb-1">
+                                      Capacidad total mínima
+                                    </label>
+
+                                    <input
+                                      type="number"
+                                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md"
+                                    />
+                                  </div>
+                                </div>
+                              )}
 
               <div className="pt-4 flex gap-3">
                 <button

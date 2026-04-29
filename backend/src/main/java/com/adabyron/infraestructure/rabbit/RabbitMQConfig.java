@@ -30,6 +30,9 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue crearReservaCriteriosQueue() { return new Queue("reserva.crear.criterios", true); }
+
+    @Bean
     public Queue queueEliminarReserva() {
         return new Queue("reserva.eliminar");
     }

@@ -1,5 +1,6 @@
 package com.adabyron.domain.espacio;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,4 +15,6 @@ public interface EspacioRepository {
     List<Espacio> findByCategoria(Categoria categoria);
 
     List<Espacio> findByNumOcupantes(int numOcupantes);
+
+    List<Espacio> findDisponibles(LocalDateTime inicio, LocalDateTime fin);
 }

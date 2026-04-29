@@ -2,26 +2,19 @@
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-export async function reservarEspacio(prevState: any, data: FormData) {
+export async function reservarEspacio(data: any) {
     //console.log('Datos recibidos en reservarEspacio:', data);
 
-    const rawEspacios = data.get('espacioIds') as string || '';
-    const espacioIds = rawEspacios.split(',').map(id => id.trim()).filter(id => id !== '');
-
-    const reservadaPorId = data.get('reservadaPorId') as string;
-    let tipoUso = data.get('tipoUso') as string;
-    if (tipoUso === 'Docencia') tipoUso = 'DOCENCIA';
-    if (tipoUso === 'Investigación') tipoUso = 'INVESTIGACION';
-    if (tipoUso === 'Gestión') tipoUso = 'GESTION';
-    if (tipoUso === 'Otro') tipoUso = 'OTRO';
-
-    const fecha = data.get('fecha') as string;
-    const horaInicio = data.get('horaInicio') as string;
-    const detallesAdicionales = data.get('detallesAdicionales') as string;
-
-    const numeroAsistentes = Number(data.get('numeroAsistentes')) || 0;
-    const duracionMinutos = Number(data.get('duracionMinutos')) || 0;
-
+    const {
+        reservadaPorId,
+        espacioIds,
+        tipoUso,
+        numeroAsistentes,
+        fecha,
+        horaInicio,
+        duracionMinutos,
+        detallesAdicionales,
+      } = data;
 
 
     // URL Sustituida por variable de entorno
@@ -53,4 +46,32 @@ export async function reservarEspacio(prevState: any, data: FormData) {
         success: true, 
         data: result 
     };
+}
+
+export async function reservarPorCriterios(data: any) {
+  const {
+      reservadaPorId,
+      numEspacios,
+      capacidadTotal,
+      fecha,
+      horaInicio,
+      duracionMinutos,
+      detallesAdicionales,
+    } = data;
+
+  const res = await fetch(`${API_URL}/api/reservas`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+  console.log(res);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text);
+  }
+
+  return await res.json();
 }

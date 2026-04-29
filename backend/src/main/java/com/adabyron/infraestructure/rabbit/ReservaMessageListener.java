@@ -35,6 +35,17 @@ public class ReservaMessageListener {
 
     }
 
+    @RabbitListener(queues = "reserva.crear.criterios")
+    public ReservaDTO onCrearReservaPorCriterios(CrearReservaPorCriteriosDTO dto) {
+        try {
+            Reserva reserva = reservaService.crearReservaCriterios(dto);
+            return ReservaDTO.fromEntity(reserva);
+
+        } catch (IllegalArgumentException ex) {
+            throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
+        }
+    }
+
     @RabbitListener(queues = "reserva.listar.activas")
     public List<ReservaDTO> onListarActivas(String mensaje) {
         return reservaService.listarReservasActivas().stream()
