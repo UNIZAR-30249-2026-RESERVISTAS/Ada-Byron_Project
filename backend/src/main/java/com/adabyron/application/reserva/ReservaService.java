@@ -138,7 +138,8 @@ public class ReservaService {
         var persona = personaRepository.findById(solicitanteId)
             .orElseThrow(() -> new PersonaNotFoundException(solicitanteId));
 
-        Reserva reserva = buscarPorId(id);
+        Reserva reserva = reservaRepository.findById(id)
+            .orElseThrow(() -> new ReservaNotFoundException(id));
         reserva.cancelar(persona.getRoles(), persona.getPersonaId(), motivo != null ? motivo : "Cancelada");
         return reservaRepository.save(reserva);
     }
