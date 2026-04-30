@@ -1,6 +1,8 @@
 package com.adabyron.infraestructure.web;
 
 import com.adabyron.application.espacio.*;
+import com.adabyron.application.persona.PersonaDTO;
+import com.adabyron.application.reserva.ReservaDTO;
 import com.adabyron.domain.espacio.Categoria;
 import com.adabyron.domain.espacio.HorarioDisponible;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,19 +12,23 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
 @RestController
 @RequestMapping("/api/espacios")
 @Tag(name = "Espacios", description = "Gestión de espacios: consulta, asignación de categoría, estado y horarios")
 public class EspacioController {
-    private final EspacioService espacioService;
+    //private final EspacioService espacioService;
+    private final RabbitTemplate rabbitTemplate;
 
-    public EspacioController(EspacioService espacioService) {
-        this.espacioService = espacioService;
+    public EspacioController(RabbitTemplate rabbitTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @Operation(
@@ -42,8 +48,16 @@ public class EspacioController {
             @ApiResponse(responseCode = "404", description = "No existe ningún espacio con el ID indicado.", content = @Content)
     })
     @GetMapping("/{id}")
-    public EspacioDTO buscarPorId(@PathVariable String id){
-        return EspacioDTO.fromEntity(espacioService.obtenerDetalles(id));
+    public EspacioDTO buscarPorId(@PathVariable String id) throws TimeoutException {
+        //return EspacioDTO.fromEntity(espacioService.obtenerDetalles(id));
+
+        Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.buscar.porId", id);
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (EspacioDTO) respuesta;
     }
 
     @Operation(
@@ -62,8 +76,15 @@ public class EspacioController {
             @ApiResponse(responseCode = "404", description = "No existe ningún espacio con el ID indicado.", content = @Content)
     })
     @PutMapping("/{id}/categoria")
-    public EspacioDTO cambiarCategoria(@PathVariable String id, @RequestBody CambiarCategoriaDTO dto){
-        return EspacioDTO.fromEntity(espacioService.cambiarCategoria(id, Categoria.desdeNombre(dto.categoria())));
+    public EspacioDTO cambiarCategoria(@PathVariable String id, @RequestBody CambiarCategoriaDTO dto) throws TimeoutException {
+        //return EspacioDTO.fromEntity(espacioService.cambiarCategoria(id, Categoria.desdeNombre(dto.categoria())));
+        CambiarCategoriaCommand comando = new CambiarCategoriaCommand(id, dto);
+        Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.cambiarCategoria", comando);
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (EspacioDTO) respuesta;
     }
 
     @Operation(
@@ -82,8 +103,15 @@ public class EspacioController {
             @ApiResponse(responseCode = "404", description = "No existe ningún espacio con el ID indicado.", content = @Content)
     })
     @PutMapping("/{id}/reservable")
-    public EspacioDTO cambiarEstado(@PathVariable String id, @RequestBody CambiarReservableDTO dto){
-        return EspacioDTO.fromEntity(espacioService.cambiarReservable(id, dto.reservable()));
+    public EspacioDTO cambiarEstado(@PathVariable String id, @RequestBody CambiarReservableDTO dto) throws TimeoutException {
+        //return EspacioDTO.fromEntity(espacioService.cambiarReservable(id, dto.reservable()));
+        CambiarEstadoCommand comando = new CambiarEstadoCommand(id, dto);
+        Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.cambiarEstado", comando);
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (EspacioDTO) respuesta;
     }
     
     // ENDPOINTS DE HORARIOS (REQ-C5, REQ-C6)
@@ -106,12 +134,18 @@ public class EspacioController {
             @ApiResponse(responseCode = "404", description = "No existe ningún espacio con el ID indicado.", content = @Content)
     })
     @GetMapping("/{id}/horario")
-    public HorarioDTO obtenerHorario(@PathVariable String id) {
-        var espacio = espacioService.obtenerDetalles(id);
-        return HorarioDTO.fromDomain(
-            espacio.getHorarioDisponible(),
-            !espacio.tieneHorarioEspecifico()
-        );
+    public HorarioDTO obtenerHorario(@PathVariable String id) throws TimeoutException {
+        //var espacio = espacioService.obtenerDetalles(id);
+        //return HorarioDTO.fromDomain(
+        //    espacio.getHorarioDisponible(),
+        //    !espacio.tieneHorarioEspecifico()
+        //);
+        Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.obtenerHorario", id);
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (HorarioDTO) respuesta;
     }
 
     @Operation(
@@ -140,9 +174,16 @@ public class EspacioController {
             @Parameter(description = "UUID del gerente que ejecuta la operación", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
             @RequestParam UUID gerenteId,
             @RequestBody CambiarHorarioDTO dto
-    ) {
+    ) throws TimeoutException {
         HorarioDisponible nuevoHorario = new HorarioDisponible(dto.horaApertura(), dto.horaCierre());
-        return EspacioDTO.fromEntity(espacioService.cambiarHorario(id, nuevoHorario, gerenteId));
+        //return EspacioDTO.fromEntity(espacioService.cambiarHorario(id, nuevoHorario, gerenteId));
+        CambiarHorarioCommand comando = new CambiarHorarioCommand(id, nuevoHorario, gerenteId);
+        Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.cambiarHorario", comando);
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (EspacioDTO) respuesta;
     }
 
     @Operation(
@@ -168,8 +209,15 @@ public class EspacioController {
             @PathVariable String id,
             @Parameter(description = "UUID del gerente que ejecuta la operación", example = "123e4567-e89b-12d3-a456-426614174000", required = true)
             @RequestParam UUID gerenteId
-    ) {
-        return EspacioDTO.fromEntity(espacioService.restablecerHorario(id, gerenteId));
+    ) throws TimeoutException {
+        //return EspacioDTO.fromEntity(espacioService.restablecerHorario(id, gerenteId));
+        RestablecerHorarioCommand comando =  new RestablecerHorarioCommand(id, gerenteId);
+        Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.restablecerHorario", comando);
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (EspacioDTO) respuesta;
     }
 
 	@Operation(
@@ -188,8 +236,15 @@ public class EspacioController {
 		@ApiResponse(responseCode = "404", description = "No existe ningún espacio con el ID indicado.", content = @Content)
 	})
     @GetMapping("/{id}/asignacion")
-	public AsignacionDTO obtenerAsignacion(@PathVariable String id) {
-		return AsignacionDTO.fromDomain(espacioService.obtenerAsignacion(id));
+	public AsignacionDTO obtenerAsignacion(@PathVariable String id) throws TimeoutException {
+		//return AsignacionDTO.fromDomain(espacioService.obtenerAsignacion(id));
+        Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.obtenerAsignacion", id);
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (AsignacionDTO) respuesta;
 	}
 
 	@Operation(
@@ -210,8 +265,16 @@ public class EspacioController {
 		@ApiResponse(responseCode = "404", description = "No existe ningún espacio con el ID indicado.", content = @Content)
 	})
 	@PutMapping("/{id}/asignacion/eina")
-	public EspacioDTO asignarAEina(@PathVariable String id) {
-		return EspacioDTO.fromEntity(espacioService.asignarAEina(id));
+	public EspacioDTO asignarAEina(@PathVariable String id) throws TimeoutException {
+		//return EspacioDTO.fromEntity(espacioService.asignarAEina(id));
+        Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.asignarAEina", id);
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (EspacioDTO) respuesta;
+
 	}
 
 	@Operation(
@@ -235,10 +298,17 @@ public class EspacioController {
 	public EspacioDTO asignarADepartamento(
 			@PathVariable String id,
 			@RequestBody AsignarDepartamentoDTO dto
-	) {
-		return EspacioDTO.fromEntity(
-			espacioService.asignarADepartamento(id, dto.departamentoId())
-		);
+	) throws TimeoutException {
+		//return EspacioDTO.fromEntity(espacioService.asignarADepartamento(id, dto.departamentoId()));
+        AsignarADepartamentoCommand comando = new AsignarADepartamentoCommand(id, dto);
+
+        Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.asignarADepartamento", comando);
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (EspacioDTO) respuesta;
 	}
 
 	@Operation(
@@ -263,10 +333,23 @@ public class EspacioController {
 	public EspacioDTO asignarAPersonas(
 			@PathVariable String id,
 			@RequestBody AsignarPersonasDTO dto
-	) {
-		return EspacioDTO.fromEntity(
-			espacioService.asignarAPersonas(id, dto.personaIds())
-		);
+	) throws TimeoutException {
+		//return EspacioDTO.fromEntity(espacioService.asignarAPersonas(id, dto.personaIds()));
+        AsignarAPersonasCommand comando = new  AsignarAPersonasCommand(id, dto);
+
+        Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.asignarAPersonas", comando);
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servidor de aplicaciones no responde.");
+        }
+
+        return (EspacioDTO) respuesta;
 	}
+
+    @ResponseStatus(value = HttpStatus.REQUEST_TIMEOUT)
+    @ExceptionHandler(TimeoutException.class)
+    public String timeout() {
+        return "La petición no puede resolverse ahora, el servidor de espacios no responde.";
+    }
 
 }

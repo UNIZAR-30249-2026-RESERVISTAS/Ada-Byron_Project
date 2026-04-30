@@ -28,5 +28,18 @@ services:
     depends_on:
       postgis:
         condition: service_healthy
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: adabyron-rabbitmq
+    ports:
+      - "5672:5672"   # Puerto de comunicación de la aplicación (AMQP)
+      - "15672:15672" # Interfaz web de administración
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: always
 volumes:
   dbdata:
+  rabbitmq_data:

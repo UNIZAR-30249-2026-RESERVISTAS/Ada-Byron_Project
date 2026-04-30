@@ -13,7 +13,7 @@ GET {{baseUrl}}/107/horario
 ### 3. Cambiar el horario de un espacio - Solo GERENTE (REQ-C6)
 ###    El horario debe estar dentro del horario del edificio (8:00-21:00)
 ###    Ejemplo válido: 09:00 - 18:00 
-PUT {{baseUrl}}/107/horario?gerenteId=2b3c463d-4497-4ba8-8f9d-ac6669983257
+PUT {{baseUrl}}/107/horario?gerenteId=27ebe1de-347f-4115-9e1c-f826232898d9
 Content-Type: {{contentType}}
 
 {
@@ -23,7 +23,7 @@ Content-Type: {{contentType}}
 
 ### 4. Cambiar horario inválido - DEBE FALLAR 
 ###    El horario está fuera del horario del edificio (7:00 < 8:00)
-PUT {{baseUrl}}/107/horario?gerenteId=2b3c463d-4497-4ba8-8f9d-ac6669983257
+PUT {{baseUrl}}/107/horario?gerenteId=27ebe1de-347f-4115-9e1c-f826232898d9
 Content-Type: {{contentType}}
 
 {
@@ -43,7 +43,7 @@ Content-Type: {{contentType}}
 
 ### 6. Restablecer horario al del edificio - Solo GERENTE (REQ-C6)
 ###    Elimina el horario específico y vuelve al horario del edificio (8:00-21:00)
-DELETE {{baseUrl}}/107/horario?gerenteId=2b3c463d-4497-4ba8-8f9d-ac6669983257
+DELETE {{baseUrl}}/107/horario?gerenteId=27ebe1de-347f-4115-9e1c-f826232898d9
 
 ### 7. Restablecer horario sin ser gerente - DEBE FALLAR 
 DELETE {{baseUrl}}/107/horario?gerenteId=8124f18a-b69f-428b-b235-ddfb4979ace9

@@ -16,6 +16,7 @@ import com.adabyron.domain.persona.PersonaRepository;
 import com.adabyron.domain.reserva.*;
 import com.adabyron.domain.service.ReservaValidacionService;
 import com.adabyron.domain.reserva.exception.ReservaNotFoundException;
+import com.adabyron.infraestructure.mail.MailService;
 
 @Service
 @Transactional
@@ -24,12 +25,16 @@ public class ReservaService {
     private final EspacioRepository espacioRepository;
     private final PersonaRepository personaRepository;
     private final ReservaValidacionService validacionService;
+    private final MailService servicioEmail;
 
-    public ReservaService(ReservaRepository reservaRepository, EspacioRepository espacioRepository, PersonaRepository personaRepository, ReservaValidacionService validacionService) {
+    public ReservaService(ReservaRepository reservaRepository, EspacioRepository espacioRepository,
+                          PersonaRepository personaRepository, ReservaValidacionService validacionService,
+                          MailService servicioEmail) {
         this.reservaRepository = reservaRepository;
         this.espacioRepository = espacioRepository;
         this.personaRepository = personaRepository;
         this.validacionService = validacionService;
+        this.servicioEmail = servicioEmail;
     }
 
     public Reserva crearReserva(CrearReservaDTO dto) {
@@ -141,6 +146,12 @@ public class ReservaService {
         Reserva reserva = reservaRepository.findById(id)
             .orElseThrow(() -> new ReservaNotFoundException(id));
         reserva.cancelar(persona.getRoles(), persona.getPersonaId(), motivo != null ? motivo : "Cancelada");
+
+        String contenido = "Su reserva con id " + id + " ha sido cancelada";
+        String mail = persona.getEmail();
+
+        servicioEmail.enviarCorreoCancelacion(mail, contenido);
+
         return reservaRepository.save(reserva);
     }
  
@@ -172,6 +183,8 @@ public class ReservaService {
             .orElseThrow(() -> new IllegalArgumentException(
                 "Persona no encontrada: " + solicitanteId));
 
+        var mail = persona.getEmail();
+
         // Buscamos la reserva
         Reserva reserva = reservaRepository.findById(id)
             .orElseThrow(() -> new ReservaNotFoundException(id));
@@ -187,5 +200,9 @@ public class ReservaService {
 
         // Eliminamos físicamente
         reservaRepository.deleteById(id);
+
+        String contenido = "Su reserva con id " + id + " ha sido eliminada";
+
+        servicioEmail.enviarCorreoEliminacion(mail, contenido);
     }
 }

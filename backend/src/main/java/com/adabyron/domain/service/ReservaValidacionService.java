@@ -1,11 +1,10 @@
 package com.adabyron.domain.service;
 
+import com.adabyron.domain.espacio.Asignacion;
 import com.adabyron.domain.espacio.CategoriaReserva;
 import com.adabyron.domain.espacio.Espacio;
 import com.adabyron.domain.espacio.HorarioDisponible;
-import com.adabyron.domain.persona.DepartamentoId;
-import com.adabyron.domain.persona.Persona;
-import com.adabyron.domain.persona.Rol;
+import com.adabyron.domain.persona.*;
 import com.adabyron.domain.reserva.IntervaloTemporal;
 import com.adabyron.domain.reserva.Reserva;
 import com.adabyron.domain.reserva.exception.ReservaInvalidaException;
@@ -29,6 +28,13 @@ public class ReservaValidacionService {
      * @param reservasExist   Reservas vigentes del espacio (para comprobar solapamientos)
      * @param deptoEspacio    Departamento al que está asignado el espacio (puede ser null)
      */
+
+    private final PersonaRepository personaRepository;
+
+    public ReservaValidacionService(PersonaRepository personaRepository) {
+        this.personaRepository = personaRepository;
+    }
+
     public void validar(Persona persona, Espacio espacio, int numAsistentes,
                         IntervaloTemporal intervalo, double porcentajeOcup,
                         List<Reserva> reservasExist, DepartamentoId deptoEspacio) {
@@ -54,7 +60,7 @@ public class ReservaValidacionService {
         // REQ-O4 — Un despacho podrá ser reservable en caso de que esté asignado a un DPTO.
         // En ese caso, solo podrán reservarlo los investigadores contratados y docentes investigadores de ese DPTO o los gerentes.
         if (categoria == CategoriaReserva.DESPACHO) {
-            validarReservaDespacho(persona, deptoEspacio);
+            validarReservaDespacho(persona, espacio);
         } 
 
         // REQ-F1, F2, F3 — permisos por rol
@@ -106,31 +112,70 @@ public class ReservaValidacionService {
 
     /**
      * REQ-O3: Validaciones específicas para reservas de despachos:
-     * - El despacho debe estar asignado a un departamento (no pueden reservarse despachos sin asignación o asignados a personas).
+     * - El despacho debe estar asignado a un departamento (no pueden reservarse despachos sin asignación o asignados
+     * a personas excepto si es de una persona con rol Investigador Visitante).
      * - Solo investigadores contratados, docentes-investigadores pueden reservar despachos.
      */
-    private void validarReservaDespacho(Persona persona, DepartamentoId deptoEspacio) {
-        if (deptoEspacio == null) {
-            throw new ReservaInvalidaException(
-                "Los despachos solo pueden reservarse si están asignados a un departamento (REQ-O3)"
-            );
+    private void validarReservaDespacho(Persona persona, Espacio despacho) {
+
+        Asignacion asignacion = despacho.getAsignacion();
+
+        if(asignacion.esPersonas()){
+            Set<PersonaId> ocupantesIds = asignacion.getPersonaIds();
+
+            List<Persona> ocupantes = new ArrayList<>();
+            for (PersonaId pId : asignacion.getPersonaIds()) {
+                personaRepository.findById(pId.valor()).ifPresent(ocupantes::add);
+            }
+
+            boolean esDespachoDeVisitante = ocupantes.stream()
+                    .anyMatch(ocupante -> ocupante.tieneRol(Rol.INVESTIGADOR_VISITANTE));
+
+            if (esDespachoDeVisitante) {
+                // -- Aplicamos la flexibilización F4 --
+                if (persona.tieneRol(Rol.GERENTE)) return; // Gerente pasa siempre
+
+                boolean rolPermitido = persona.tieneRol(Rol.INVESTIGADOR_CONTRATADO) ||
+                        persona.tieneRol(Rol.DOCENTE_INVESTIGADOR);
+
+                if (!rolPermitido) {
+                    throw new ReservaInvalidaException("Solo gerentes, inv. contratados o docentes pueden reservar.");
+                }
+
+                // Validamos que el reservante sea del mismo departamento que el visitante
+                // (Buscamos al visitante específico de la lista de ocupantes para comparar el departamento)
+                Persona visitante = ocupantes.stream()
+                        .filter(o -> o.tieneRol(Rol.INVESTIGADOR_VISITANTE))
+                        .findFirst().get();
+
+                if (!persona.getDepartamentoId().equals(visitante.getDepartamentoId())) {
+                    throw new ReservaInvalidaException("Debes ser del mismo departamento que el visitante.");
+                }
+
+                return; // Fin del caso excepcional
+            }
         }
 
-        boolean rolPermitido =
-            persona.tieneRol(Rol.INVESTIGADOR_CONTRATADO) ||
-            persona.tieneRol(Rol.DOCENTE_INVESTIGADOR);
+        if (asignacion.esDepartamento()) {
 
-        if (!rolPermitido) {
-            throw new ReservaInvalidaException(
-                "Solo investigadores contratados o docentes-investigadores pueden reservar despachos departamentales (REQ-O3)"
-            );
-        }
+            DepartamentoId deptoEspacio = asignacion.getDepartamentoId();
 
-        DepartamentoId deptoPersona = persona.getDepartamentoId();
-        if (deptoPersona == null || !deptoPersona.equals(deptoEspacio)) {
-            throw new ReservaInvalidaException(
-                "Solo puedes reservar despachos de tu departamento (REQ-O3)"
-            );
+            boolean rolPermitido = persona.tieneRol(Rol.INVESTIGADOR_CONTRATADO) ||
+                    persona.tieneRol(Rol.DOCENTE_INVESTIGADOR);
+
+            if (!rolPermitido) {
+                throw new ReservaInvalidaException("Solo investigadores contratados o docentes-investigadores pueden reservar despachos departamentales (REQ-O3)");
+            }
+
+            DepartamentoId deptoPersona = persona.getDepartamentoId();
+
+            if (deptoPersona == null || !deptoPersona.equals(deptoEspacio)) {
+                throw new ReservaInvalidaException("Solo puedes reservar despachos de tu departamento (REQ-O3)");
+            }
+        } else {
+            // Por la validación de tu dominio esto no debería pasar nunca,
+            // pero es buena práctica cubrirlo por si acaso.
+            throw new ReservaInvalidaException("Los despachos solo pueden reservarse si están asignados a un departamento o persona (REQ-O3)");
         }
     }
 
