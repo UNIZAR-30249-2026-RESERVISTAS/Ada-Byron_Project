@@ -138,12 +138,13 @@ export default function PaginaPrincipal() {
        });
      } else {
        result = await reservarPorCriterios({
-         reservadaPorId: formData.get('reservadaPorId'),
-         numEspacios: Number(formData.get('numEspacios')),
-         capacidadTotal: Number(formData.get('capacidadTotal')),
-         fecha: formData.get('fecha'),
-         horaInicio: formData.get('horaInicio'),
-         duracionMinutos: Number(formData.get('duracionMinutos')),
+         reservadaPorId: String(formData.get('reservadaPorId') || ''),
+         numEspacios: Number(formData.get('numEspacios') || 0),
+         capacidadTotal: Number(formData.get('capacidadTotal') || 0),
+         fecha: String(formData.get('fecha') || ''),
+         horaInicio: String(formData.get('horaInicio') || ''),
+         duracionMinutos: Number(formData.get('duracionMinutos') || 0),
+         tipoUso: String(formData.get('reservadaPorId') || 'Docencia'),
        });
      }
 
@@ -614,6 +615,7 @@ export default function PaginaPrincipal() {
 
                                     <input
                                       type="number"
+                                      name="numEspacios"
                                       className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md"
                                     />
                                   </div>
@@ -625,9 +627,47 @@ export default function PaginaPrincipal() {
 
                                     <input
                                       type="number"
+                                      name="capacidadTotal"
                                       className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md"
                                     />
                                   </div>
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                                  {/* Fecha */}
+                                                  <div>
+                                                    <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Fecha</label>
+                                                    <input
+                                                      type="date"
+                                                      name="fecha"
+                                                      value={modalContent.fecha}
+                                                      onChange={handleChange}
+                                                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                                                    />
+                                                  </div>
+                                                  {/* Hora Inicio */}
+                                                  <div>
+                                                    <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Hora Inicio</label>
+                                                    <input
+                                                      type="time"
+                                                      name="horaInicio"
+                                                      value={modalContent.horaInicio}
+                                                      onChange={handleChange}
+                                                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                                                    />
+                                                  </div>
+                                                </div>
+
+                                                {/* Duración */}
+                                                <div>
+                                                  <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Duración (minutos)</label>
+                                                  <input
+                                                    type="text"
+                                                    name="duracionMinutos"
+                                                    value={modalContent.duracionMinutos}
+                                                    onChange={handleChange}
+                                                    className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                                                  />
+                                                </div>
                                 </div>
                               )}
 

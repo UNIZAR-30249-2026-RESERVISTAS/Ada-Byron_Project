@@ -50,26 +50,33 @@ export async function reservarEspacio(data: any) {
 
 export async function reservarPorCriterios(data: any) {
   const {
-      reservadaPorId,
-      numEspacios,
-      capacidadTotal,
-      fecha,
-      horaInicio,
-      duracionMinutos,
-      detallesAdicionales,
-    } = data;
+    reservadaPorId,
+    numEspacios,
+    capacidadTotal,
+    fecha,
+    horaInicio,
+    duracionMinutos,
+  } = data;
 
-  const res = await fetch(`${API_URL}/api/reservas`, {
+  const res = await fetch(`${API_URL}/api/reservas/criterios`, {
     method: "POST",
-    body: JSON.stringify(data),
     headers: {
       "Content-Type": "application/json",
     },
     credentials: "include",
+    body: JSON.stringify({
+      reservadaPorId,
+      numEspacios: Number(numEspacios),
+      capacidadTotal: Number(capacidadTotal),
+      fecha,
+      horaInicio,
+      duracionMinutos: Number(duracionMinutos),
+    }),
   });
-  console.log(res);
+
   if (!res.ok) {
     const text = await res.text();
+    console.error("ERROR BACKEND:", text);
     throw new Error(text);
   }
 
