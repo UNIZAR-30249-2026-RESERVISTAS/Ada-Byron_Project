@@ -51,12 +51,29 @@ export async function reservarEspacio(data: any) {
 export async function reservarPorCriterios(data: any) {
   const {
     reservadaPorId,
-    numEspacios,
-    capacidadTotal,
+    numeroEspacios,
+    numeroAsistentes,
     fecha,
     horaInicio,
     duracionMinutos,
+    categoria,
+    detallesAdicionales,
+    tipoUso
   } = data;
+  
+  var categoriaId = 0;
+
+  //if(categoria === "Aula") {
+  //  categoriaId = 1;
+  //} else if(categoria === "Seminario") {
+  //  categoriaId = 2;
+  //} else if(categoria === "Laboratorio") {
+  //  categoriaId = 3;
+  //} else if(categoria === "Despacho") {
+  //  categoriaId = 4;
+  //} else if(categoria === "Sala Común") {
+  //  categoriaId = 5;
+  //}
 
   const res = await fetch(`${API_URL}/api/reservas/criterios`, {
     method: "POST",
@@ -66,11 +83,14 @@ export async function reservarPorCriterios(data: any) {
     credentials: "include",
     body: JSON.stringify({
       reservadaPorId,
-      numEspacios: Number(numEspacios),
-      capacidadTotal: Number(capacidadTotal),
+      numEspacios: Number(numeroEspacios),
+      numeroAsistentes: Number(numeroAsistentes),
       fecha,
       horaInicio,
       duracionMinutos: Number(duracionMinutos),
+      categoria,
+      detallesAdicionales,
+      tipoUso: String(tipoUso || '').toUpperCase()
     }),
   });
 
