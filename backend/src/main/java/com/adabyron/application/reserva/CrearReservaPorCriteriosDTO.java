@@ -4,16 +4,18 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
+import com.adabyron.domain.espacio.Categoria;
+import com.adabyron.domain.espacio.CategoriaId;
 import com.adabyron.domain.reserva.TipoUsoReserva;
 
 public record CrearReservaPorCriteriosDTO(
     UUID reservadaPorId,
-    Integer numeroAsistentes,
-    Integer numEspacios,
-    Integer capacidadTotal,
+    String categoria,
+    int numeroAsistentes,
+    int numEspacios,
     LocalDate fecha,
     LocalTime horaInicio,
-    Integer duracionMinutos,
+    int duracionMinutos,
     TipoUsoReserva tipoUso,
     String detallesAdicionales
 ) {}

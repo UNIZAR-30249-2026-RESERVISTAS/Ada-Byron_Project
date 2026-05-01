@@ -38,6 +38,7 @@ public class ReservaMessageListener {
     @RabbitListener(queues = "reserva.crear.criterios")
     public ReservaDTO onCrearReservaPorCriterios(CrearReservaPorCriteriosDTO dto) {
         try {
+            System.out.println("Datos que llegan por criterios" + dto);
             Reserva reserva = reservaService.crearReservaCriterios(dto);
             return ReservaDTO.fromEntity(reserva);
 

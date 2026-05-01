@@ -28,4 +28,13 @@ public interface SpringDataEspacioRepository extends JpaRepository<EspacioJpaEnt
         @Param("inicio") LocalDateTime inicio,
         @Param("fin") LocalDateTime fin
     );
+
+    @Query("SELECT e FROM EspacioJpaEntity e WHERE e.categoria = :categoria AND NOT EXISTS (" +
+            "SELECT 1 FROM ReservaJpaEntity r JOIN r.espacioIds re " +
+            "WHERE re = e.id AND r.estado IN ('CONFIRMADA', 'POTENCIALMENTE_INVALIDA') " +
+            "AND r.fechaInicio < :fin AND r.fechaFin > :inicio)")
+    List<EspacioJpaEntity> findDisponiblesByCategoria(
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fin") LocalDateTime fin,
+            @Param("categoria") String categoria);
 }

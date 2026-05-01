@@ -17,4 +17,6 @@ public interface EspacioRepository {
     List<Espacio> findByNumOcupantes(int numOcupantes);
 
     List<Espacio> findDisponibles(LocalDateTime inicio, LocalDateTime fin);
+
+    List<Espacio> findDisponiblesByCategoria(LocalDateTime inicio, LocalDateTime fin, String categoria);
 }

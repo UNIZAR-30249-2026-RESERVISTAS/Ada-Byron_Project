@@ -59,4 +59,12 @@ public class EspacioRepositoryJpa implements EspacioRepository {
                 .toList();
     }
 
+    @Override
+    public List<Espacio> findDisponiblesByCategoria(LocalDateTime inicio, LocalDateTime fin, String categoria) {
+        return jpa.findDisponiblesByCategoria(inicio, fin, categoria)
+                .stream()
+                .map(EspacioConverters::toDomain) // O el mapper que uses
+                .toList();
+    }
+
 }
