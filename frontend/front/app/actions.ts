@@ -3,49 +3,46 @@
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export async function reservarEspacio(data: any) {
-    //console.log('Datos recibidos en reservarEspacio:', data);
+  const {
+    reservadaPorId,
+    espacioIds,
+    tipoUso,
+    numeroAsistentes,
+    fecha,
+    horaInicio,
+    duracionMinutos,
+    detallesAdicionales,
+  } = data;
 
-    const {
-        reservadaPorId,
+  try {
+    const response = await fetch(`${API_URL}/api/reservas`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         espacioIds,
+        reservadaPorId,
         tipoUso,
         numeroAsistentes,
         fecha,
         horaInicio,
         duracionMinutos,
-        detallesAdicionales,
-      } = data;
-
-
-    // URL Sustituida por variable de entorno
-    const response = await fetch(`${API_URL}/api/reservas`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            espacioIds,
-            reservadaPorId,
-            tipoUso,
-            numeroAsistentes,
-            fecha,
-            horaInicio,
-            duracionMinutos,
-            detallesAdicionales
-        }),
+        detallesAdicionales
+      }),
     });
 
-
     if (!response.ok) {
-        return { success: false, message: 'Error al realizar la reserva. Por favor, inténtalo de nuevo.' };
-
+      return { success: false, error: 'Error al realizar la reserva. Por favor, inténtalo de nuevo.' };
     }
 
     const result = await response.json();
-    return { 
-        success: true, 
-        data: result 
-    };
+    return { success: true, data: result };
+
+  } catch (error) {
+    console.error("Error en servidor:", error);
+    return { success: false, error: 'Error de conexión con el servidor.' };
+  }
 }
 
 export async function reservarPorCriterios(data: any) {
@@ -60,45 +57,40 @@ export async function reservarPorCriterios(data: any) {
     detallesAdicionales,
     tipoUso
   } = data;
-  
-  var categoriaId = 0;
 
-  //if(categoria === "Aula") {
-  //  categoriaId = 1;
-  //} else if(categoria === "Seminario") {
-  //  categoriaId = 2;
-  //} else if(categoria === "Laboratorio") {
-  //  categoriaId = 3;
-  //} else if(categoria === "Despacho") {
-  //  categoriaId = 4;
-  //} else if(categoria === "Sala Común") {
-  //  categoriaId = 5;
-  //}
+  try {
+    const res = await fetch(`${API_URL}/api/reservas/criterios`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        reservadaPorId,
+        numEspacios: Number(numeroEspacios),
+        numeroAsistentes: Number(numeroAsistentes),
+        fecha,
+        horaInicio,
+        duracionMinutos: Number(duracionMinutos),
+        categoria,
+        detallesAdicionales,
+        tipoUso: String(tipoUso || '').toUpperCase()
+      }),
+    });
 
-  const res = await fetch(`${API_URL}/api/reservas/criterios`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify({
-      reservadaPorId,
-      numEspacios: Number(numeroEspacios),
-      numeroAsistentes: Number(numeroAsistentes),
-      fecha,
-      horaInicio,
-      duracionMinutos: Number(duracionMinutos),
-      categoria,
-      detallesAdicionales,
-      tipoUso: String(tipoUso || '').toUpperCase()
-    }),
-  });
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("ERROR BACKEND:", text);
+      // Devolvemos el error en lugar de hacer un throw para no romper el cliente
+      return { success: false, error: text };
+    }
 
-  if (!res.ok) {
-    const text = await res.text();
-    console.error("ERROR BACKEND:", text);
-    throw new Error(text);
+    const result = await res.json();
+    // Normalizamos la respuesta para que el cliente siempre lea 'success: true'
+    return { success: true, data: result };
+
+  } catch (error: any) {
+    console.error("Error de red/servidor:", error);
+    return { success: false, error: error.message || 'Error desconocido' };
   }
-
-  return await res.json();
 }

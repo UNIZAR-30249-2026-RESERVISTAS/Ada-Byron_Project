@@ -1,11 +1,10 @@
 'use client';
-import { useState, useEffect, useActionState, use } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { LogOut, User, Users, BookMarked } from 'lucide-react';
-import { getCurrentUser, logoutUser, checkSession } from '../src/services/auth';
+import { getCurrentUser, logoutUser } from '../src/services/auth';
 import { reservarEspacio, reservarPorCriterios } from './actions';
-
 
 interface ReservaData {
   espacioIds: string;
@@ -37,6 +36,7 @@ export default function PaginaPrincipal() {
   const [filterOcupantes, setFilterOcupantes] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modoReserva, setModoReserva] = useState<'ids' | 'criterios'>('ids');
+  
   const [modalContent, setModalContent] = useState<ReservaData>({
     espacioIds: '',
     tipoUso: '',
@@ -48,10 +48,11 @@ export default function PaginaPrincipal() {
     numeroEspacios: 0,
     categoria: ''
   });
-  const [state, formAction, isPending] = useActionState(
-    modoReserva === 'ids' ? reservarEspacio : reservarPorCriterios,
-    null
-  );
+
+  // Reemplazamos useActionState por estados simples
+  const [isPending, setIsPending] = useState(false);
+  const [estadoReserva, setEstadoReserva] = useState('');
+
   const [user, setUser] = useState<any>(null);
   const [mostrarPopUp, setMostrarPopUp] = useState(false);
   const [tipoUso, setTipoUso] = useState('');
@@ -62,7 +63,8 @@ export default function PaginaPrincipal() {
     const primerId = textoIds.split(',')[0]?.trim();
 
     // Si no hay ID, limpiamos el campo
-    if (!primerId) {
+    // Si no hay ID o el ID está incompleto (ej. "0" o "00"), limpiamos y NO hacemos petición
+    if (!primerId || primerId.length < 3) {
       setTipoUso('');
       return;
     }
@@ -70,7 +72,6 @@ export default function PaginaPrincipal() {
     const obtenerTipoDeUso = async () => {
       setCargandoTipoUso(true);
       try {
-        // Reemplaza esta URL por la ruta real de tu endpoint
         const response = await fetch(`${API_URL}/api/espacios/${primerId}`);
         const data = await response.json();
 
@@ -91,8 +92,6 @@ export default function PaginaPrincipal() {
       }
     };
 
-    // Usamos un pequeño retraso (debounce) de 500ms para esperar a que 
-    // el usuario termine de escribir el ID antes de llamar a la API
     const timeoutId = setTimeout(() => {
       obtenerTipoDeUso();
     }, 500);
@@ -101,60 +100,86 @@ export default function PaginaPrincipal() {
   }, [modalContent.espacioIds]);
 
   useEffect(() => {
-    if (state?.success) {
-      setMostrarPopUp(true);
-      setIsModalOpen(false);
-
-      const timer = setTimeout(() => {
-        setMostrarPopUp(false);
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [state]);
-
-  useEffect(() => {
     setUser(getCurrentUser());
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsPending(true);
 
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    let result;
+    // Formateo de Tipo de Uso para el Enum de Java
+    const rawTipoUso = String(formData.get('tipoUso') || '');
+    let tipoUsoFormateado = rawTipoUso.toUpperCase();
+    if (tipoUsoFormateado === 'INVESTIGACIÓN') tipoUsoFormateado = 'INVESTIGACION';
+    if (tipoUsoFormateado === 'GESTIÓN') tipoUsoFormateado = 'GESTION';
 
-    if (modoReserva === 'ids') {
-      result = await reservarEspacio({
-        reservadaPorId: formData.get('reservadaPorId'),
-        espacioIds: formData.get('espacioIds'),
-        tipoUso: formData.get('tipoUso'),
-        numeroAsistentes: Number(formData.get('numeroAsistentes')),
-        fecha: formData.get('fecha'),
-        horaInicio: formData.get('horaInicio'),
-        duracionMinutos: Number(formData.get('duracionMinutos')),
-        detallesAdicionales: formData.get('detallesAdicionales'),
-      });
-    } else {
-      result = await reservarPorCriterios({
-        reservadaPorId: String(formData.get('reservadaPorId') || ''),
-        numeroEspacios: Number(formData.get('numeroEspacios') || 0),
-        numeroAsistentes: Number(formData.get('numeroAsistentes') || 0),
-        fecha: String(formData.get('fecha') || ''),
-        horaInicio: String(formData.get('horaInicio') || ''),
-        duracionMinutos: Number(formData.get('duracionMinutos') || 0),
-        categoria: String(formData.get('categoria') || ''),
-        detallesAdicionales: formData.get('detallesAdicionales'),
-        tipoUso: formData.get('tipoUso')
-        //numeroAsistentes: Number(formData.get('numeroAsistentes'))
-      });
-    }
+    try {
+      let result;
 
-    if (result?.success) {
-      setMostrarPopUp(true);
-      setIsModalOpen(false);
-      setTimeout(() => setMostrarPopUp(false), 3000);
+      if (modoReserva === 'ids') {
+        const idsString = String(formData.get('espacioIds') || '');
+        const idsArray = idsString.split(',').map(id => id.trim()).filter(id => id !== '');
+
+        result = await reservarEspacio({
+          reservadaPorId: formData.get('reservadaPorId'),
+          espacioIds: idsArray,
+          tipoUso: tipoUsoFormateado,
+          numeroAsistentes: Number(formData.get('numeroAsistentes')),
+          fecha: formData.get('fecha'),
+          horaInicio: formData.get('horaInicio'),
+          duracionMinutos: Number(formData.get('duracionMinutos')),
+          detallesAdicionales: formData.get('detallesAdicionales'),
+        });
+      } else {
+        result = await reservarPorCriterios({
+          reservadaPorId: String(formData.get('reservadaPorId') || ''),
+          numeroEspacios: Number(formData.get('numeroEspacios') || 0),
+          numeroAsistentes: Number(formData.get('numeroAsistentes') || 0),
+          fecha: String(formData.get('fecha') || ''),
+          horaInicio: String(formData.get('horaInicio') || ''),
+          duracionMinutos: Number(formData.get('duracionMinutos') || 0),
+          categoria: String(formData.get('categoria') || ''),
+          detallesAdicionales: formData.get('detallesAdicionales'),
+          tipoUso: tipoUsoFormateado
+        });
+      }
+
+      if (result?.success) {
+        // 1. Extraemos los IDs del array 'espacioIds' que viene en 'data'
+        const idsArray = result.data?.espacioIds || [];
+        let idsTexto = "";
+        let etiqueta = "";
+
+        if (idsArray.length > 0) {
+          idsTexto = idsArray.join(', '); // Unimos los IDs con coma: "301, 002"
+          // Si hay más de uno ponemos "Aulas", si no "Aula"
+          etiqueta = idsArray.length > 1 ? "Aulas " : "Aula ";
+        }
+
+        // 2. Obtenemos el estado (CONFIRMADA)
+        const mensajeBase = result.data?.estado || 'Reserva completada';
+
+        // 3. Montamos el mensaje final: "CONFIRMADA: Aulas 301, 002"
+        const mensajeFinal = idsTexto 
+          ? `${mensajeBase}: ${etiqueta}${idsTexto}` 
+          : mensajeBase;
+        
+        setEstadoReserva(mensajeFinal);
+        setMostrarPopUp(true);
+        setIsModalOpen(false);
+        
+        // Dejamos el popup 4 segundos para que dé tiempo a leer los IDs
+        setTimeout(() => setMostrarPopUp(false), 4000);
+      } else {
+        alert(result?.error || 'Ocurrió un error al intentar reservar.');
+      }
+    } catch (error) {
+      alert('Error de conexión con el servidor.');
+    } finally {
+      setIsPending(false);
     }
   };
 
@@ -197,17 +222,12 @@ export default function PaginaPrincipal() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-
-
-    // Para los números (asistentes y duración), es buena idea convertirlos
     if (name === 'numeroAsistentes' || name === 'duracionMinutos') {
       setModalContent(prev => ({ ...prev, [name]: Number(value) }));
     } else {
       setModalContent(prev => ({ ...prev, [name]: value }));
     }
-
   };
-
 
   useEffect(() => {
     const fetchData = async () => {
@@ -222,9 +242,7 @@ export default function PaginaPrincipal() {
         else if (filterId) {
           url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&espacio_id=${filterId}`;
         }
-        else if (filterOcupantes) {
-          //url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&ocupantes_min=${filterOcupantes}`;
-        }
+        
         const response = await fetch(url, {
           cache: 'no-store',
           headers: {
@@ -279,8 +297,6 @@ export default function PaginaPrincipal() {
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
-
-            {/* Botón Dashboard Usuarios — solo visible para GERENTE */}
             {user?.roles?.includes('GERENTE') && (
               <button
                 onClick={handleGoToUsersDashboard}
@@ -294,7 +310,6 @@ export default function PaginaPrincipal() {
               </button>
             )}
 
-            {/* Botón Dashboard Reservas — solo visible para GERENTE */}
             {user?.roles?.includes('GERENTE') && (
               <button
                 onClick={handleGoToReservationsDashboard}
@@ -308,7 +323,6 @@ export default function PaginaPrincipal() {
               </button>
             )}
 
-            {/* Botón de cerrar sesión */}
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
@@ -423,7 +437,7 @@ export default function PaginaPrincipal() {
           <div className="relative w-7/8">
             <input
               type="text"
-              id="identificador"
+              id="identificador_ocupantes"
               placeholder="Mín. ocupantes"
               value={filterOcupantes}
               onChange={(e) => setFilterOcupantes(e.target.value)}
@@ -441,7 +455,7 @@ export default function PaginaPrincipal() {
             <div className="pl-2 mt-4">
               <button
                 onClick={toggleModal}
-                className='w-1/2 text-white py-2 rounded-lg font-mediu transtion-colors' style={{ backgroundColor: '#1B2A4A' }}>
+                className='w-1/2 text-white py-2 rounded-lg font-medium transition-colors' style={{ backgroundColor: '#1B2A4A' }}>
                 Hacer Reserva
               </button>
             </div>
@@ -458,22 +472,18 @@ export default function PaginaPrincipal() {
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
-
               <div className="flex gap-2 mb-4">
                 <button
                   type="button"
                   onClick={() => setModoReserva('ids')}
-                  className={`px-3 py-1 rounded ${modoReserva === 'ids' ? 'bg-[#1B2A4A] text-white' : 'bg-white'
-                    }`}
+                  className={`px-3 py-1 rounded transition-colors ${modoReserva === 'ids' ? 'bg-[#1B2A4A] text-white' : 'bg-white'}`}
                 >
                   Por IDs
                 </button>
-
                 <button
                   type="button"
                   onClick={() => setModoReserva('criterios')}
-                  className={`px-3 py-1 rounded ${modoReserva === 'criterios' ? 'bg-[#1B2A4A] text-white' : 'bg-white'
-                    }`}
+                  className={`px-3 py-1 rounded transition-colors ${modoReserva === 'criterios' ? 'bg-[#1B2A4A] text-white' : 'bg-white'}`}
                 >
                   Por criterios
                 </button>
@@ -481,35 +491,31 @@ export default function PaginaPrincipal() {
 
               <input type="hidden" name="reservadaPorId" value={user?.id || ''} />
 
-              {/* Espacios IDs (Vector) */}
               {modoReserva === 'ids' && (
                 <>
                   <div>
                     <label className="block text-[11px] text-[#6B6560] uppercase mb-1">
                       IDs de Espacios (separados por coma)
                     </label>
-
                     <input
                       type="text"
                       name="espacioIds"
                       placeholder="101, 102..."
                       value={modalContent.espacioIds}
                       onChange={handleChange}
-                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] text-[13px] rounded-md placeholder-gray-400 text-[#1B2A4A]"
+                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] text-[13px] rounded-md placeholder-gray-400 text-[#1B2A4A] outline-none"
                     />
                   </div>
 
-
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Tipo de Uso */}
-                    {user.roles.includes('GERENTE') && (
+                    {user.roles.includes('GERENTE') ? (
                       <div>
                         <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Tipo de Uso</label>
                         <select
                           name="tipoUso"
                           value={modalContent.tipoUso}
                           onChange={handleChange}
-                          className="w-full px-3 py-2 bg-white border border-[#C8C3BB] rounded-md text-[13px] text-[#1B2A4A]"
+                          className="w-full px-3 py-2 bg-white border border-[#C8C3BB] rounded-md text-[13px] text-[#1B2A4A] outline-none"
                         >
                           <option value="Docencia">Docencia</option>
                           <option value="Investigación">Investigación</option>
@@ -517,23 +523,10 @@ export default function PaginaPrincipal() {
                           <option value="Otro">Otro</option>
                         </select>
                       </div>
-                    )}
-
-                    {/* Tipo de Uso (Solo lectura) */}
-                    {!user.roles.includes('GERENTE') && (
+                    ) : (
                       <div>
-                        <label className="block text-[11px] text-[#6B6560] uppercase mb-1">
-                          Tipo de Uso
-                        </label>
-
-                        {/* Este input oculto asegura que el dato viaje en el formData (formAction) */}
-                        <input
-                          type="hidden"
-                          name="tipoUso"
-                          value={tipoUso}
-                        />
-
-                        {/* Este input es solo visual, para que el usuario vea el dato pero no pueda cambiarlo */}
+                        <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Tipo de Uso</label>
+                        <input type="hidden" name="tipoUso" value={tipoUso} />
                         <input
                           type="text"
                           readOnly
@@ -544,7 +537,6 @@ export default function PaginaPrincipal() {
                       </div>
                     )}
 
-                    {/* Número Asistentes */}
                     <div>
                       <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Asistentes</label>
                       <input
@@ -552,13 +544,12 @@ export default function PaginaPrincipal() {
                         name="numeroAsistentes"
                         value={modalContent.numeroAsistentes}
                         onChange={handleChange}
-                        className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                        className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A] outline-none"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Fecha */}
                     <div>
                       <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Fecha</label>
                       <input
@@ -566,10 +557,9 @@ export default function PaginaPrincipal() {
                         name="fecha"
                         value={modalContent.fecha}
                         onChange={handleChange}
-                        className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                        className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A] outline-none"
                       />
                     </div>
-                    {/* Hora Inicio */}
                     <div>
                       <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Hora Inicio</label>
                       <input
@@ -577,12 +567,11 @@ export default function PaginaPrincipal() {
                         name="horaInicio"
                         value={modalContent.horaInicio}
                         onChange={handleChange}
-                        className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                        className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A] outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* Duración */}
                   <div>
                     <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Duración (minutos)</label>
                     <input
@@ -590,23 +579,23 @@ export default function PaginaPrincipal() {
                       name="duracionMinutos"
                       value={modalContent.duracionMinutos}
                       onChange={handleChange}
-                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A] outline-none"
                     />
                   </div>
 
-                  {/* Detalles Adicionales */}
                   <div>
                     <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Mensaje Opcional</label>
                     <textarea
                       name="detallesAdicionales"
                       value={modalContent.detallesAdicionales}
                       onChange={handleChange}
-                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] resize-none placeholder-gray-400 text-[#1B2A4A]"
+                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] resize-none placeholder-gray-400 text-[#1B2A4A] outline-none"
                       placeholder="Indique detalles adicionales"
                     ></textarea>
                   </div>
                 </>
               )}
+
               {modoReserva === 'criterios' && (
                 <div className="space-y-3">
                   <div>
@@ -616,19 +605,18 @@ export default function PaginaPrincipal() {
                       name="numeroEspacios"
                       value={modalContent.numeroEspacios}
                       onChange={handleChange}
-                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A] outline-none"
                     />
                   </div>
 
-                  {/* Tipo de Uso */}
-                  {user.roles.includes('GERENTE') && (
+                  {user.roles.includes('GERENTE') ? (
                     <div>
                       <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Tipo de Uso</label>
                       <select
                         name="tipoUso"
                         value={modalContent.tipoUso}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 bg-white border border-[#C8C3BB] rounded-md text-[13px] text-[#1B2A4A]"
+                        className="w-full px-3 py-2 bg-white border border-[#C8C3BB] rounded-md text-[13px] text-[#1B2A4A] outline-none"
                       >
                         <option value="Docencia">Docencia</option>
                         <option value="Investigación">Investigación</option>
@@ -636,23 +624,10 @@ export default function PaginaPrincipal() {
                         <option value="Otro">Otro</option>
                       </select>
                     </div>
-                  )}
-
-                  {/* Tipo de Uso (Solo lectura) */}
-                  {!user.roles.includes('GERENTE') && (
+                  ) : (
                     <div>
-                      <label className="block text-[11px] text-[#6B6560] uppercase mb-1">
-                        Tipo de Uso
-                      </label>
-
-                      {/* Este input oculto asegura que el dato viaje en el formData (formAction) */}
-                      <input
-                        type="hidden"
-                        name="tipoUso"
-                        value={tipoUso}
-                      />
-
-                      {/* Este input es solo visual, para que el usuario vea el dato pero no pueda cambiarlo */}
+                      <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Tipo de Uso</label>
+                      <input type="hidden" name="tipoUso" value={tipoUso} />
                       <input
                         type="text"
                         readOnly
@@ -664,17 +639,14 @@ export default function PaginaPrincipal() {
                   )}
 
                   <div>
-                    <label className="block text-[11px] text-[#6B6560] uppercase mb-1">
-                      Categoría
-                    </label>
-
+                    <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Categoría</label>
                     <input
                       type="text"
                       name="categoria"
                       placeholder="Aula, Seminario, Laboratorio, Despacho o Sala Común"
                       value={modalContent.categoria}
                       onChange={handleChange}
-                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] text-[13px] rounded-md placeholder-gray-400 text-[#1B2A4A]"
+                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] text-[13px] rounded-md placeholder-gray-400 text-[#1B2A4A] outline-none"
                     />
                   </div>
 
@@ -685,12 +657,11 @@ export default function PaginaPrincipal() {
                       name="numeroAsistentes"
                       value={modalContent.numeroAsistentes}
                       onChange={handleChange}
-                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A] outline-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Fecha */}
                     <div>
                       <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Fecha</label>
                       <input
@@ -698,10 +669,9 @@ export default function PaginaPrincipal() {
                         name="fecha"
                         value={modalContent.fecha}
                         onChange={handleChange}
-                        className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                        className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A] outline-none"
                       />
                     </div>
-                    {/* Hora Inicio */}
                     <div>
                       <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Hora Inicio</label>
                       <input
@@ -709,12 +679,11 @@ export default function PaginaPrincipal() {
                         name="horaInicio"
                         value={modalContent.horaInicio}
                         onChange={handleChange}
-                        className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                        className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A] outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* Duración */}
                   <div>
                     <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Duración (minutos)</label>
                     <input
@@ -722,18 +691,17 @@ export default function PaginaPrincipal() {
                       name="duracionMinutos"
                       value={modalContent.duracionMinutos}
                       onChange={handleChange}
-                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A]"
+                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] placeholder-gray-400 text-[#1B2A4A] outline-none"
                     />
                   </div>
 
-                  {/* Detalles Adicionales */}
                   <div>
                     <label className="block text-[11px] text-[#6B6560] uppercase mb-1">Mensaje Opcional</label>
                     <textarea
                       name="detallesAdicionales"
                       value={modalContent.detallesAdicionales}
                       onChange={handleChange}
-                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] resize-none placeholder-gray-400 text-[#1B2A4A]"
+                      className="w-full bg-white px-3 py-2 border border-[#C8C3BB] rounded-md text-[13px] resize-none placeholder-gray-400 text-[#1B2A4A] outline-none"
                       placeholder="Indique detalles adicionales"
                     ></textarea>
                   </div>
@@ -750,9 +718,10 @@ export default function PaginaPrincipal() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 text-[13px] text-white bg-[#1B2A4A] rounded-lg hover:bg-[#3B6FD4] transition-all"
+                  disabled={isPending}
+                  className="flex-1 py-2 text-[13px] text-white bg-[#1B2A4A] rounded-lg hover:bg-[#3B6FD4] transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  Confirmar Reserva
+                  {isPending ? 'Procesando...' : 'Confirmar Reserva'}
                 </button>
               </div>
             </form>
@@ -791,15 +760,6 @@ export default function PaginaPrincipal() {
             >
               P{floor}
             </span>
-            <span
-              className="block"
-              style={{
-                fontSize: '9px',
-                color: currentFloor === floor ? '#2A9B6F' : '#8A8F9E',
-                marginTop: '2px',
-              }}
-            >
-            </span>
           </button>
         ))}
       </div>
@@ -811,11 +771,11 @@ export default function PaginaPrincipal() {
 
       {mostrarPopUp && (
         <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-[#1B2A4A] text-white px-8 py-4 rounded-full shadow-2xl flex items-center space-x-3 border-2 border-[#1B2A4A]">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-[#1B2A4A] text-white px-8 py-4 rounded-full shadow-2xl flex items-center space-x-3 border-2 border-[#1B2A4A] whitespace-nowrap">
+            <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
             </svg>
-            <span className="font-bold">{state?.data.estado}</span>
+            <span className="font-bold">{estadoReserva}</span>
           </div>
         </div>
       )}
