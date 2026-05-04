@@ -1,6 +1,7 @@
 package com.adabyron.infraestructure.web;
 
 import com.adabyron.application.edificio.CambiarPorcentajeOcupacionDTO;
+import com.adabyron.application.edificio.EdificioHorarioDTO;
 import com.adabyron.application.edificio.EdificioOcupacionDTO;
 import com.adabyron.application.edificio.EdificioService;
 import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
@@ -59,7 +60,7 @@ public class EdificioController {
         Object respuesta = rabbitTemplate.convertSendAndReceive("edificio.porcentajeOcupacion", "GET");
 
         if (respuesta == null) {
-            throw new TimeoutException("El servicio de aplicaciones no responde");
+            throw new TimeoutException("El servicio de edificio no responde");
         }
 
         return (EdificioOcupacionDTO) respuesta;
@@ -77,7 +78,7 @@ public class EdificioController {
         Object respuesta = rabbitTemplate.convertSendAndReceive("edificio.cambiarPorcentajeOcupacion", dto);
 
         if (respuesta == null) {
-            throw new TimeoutException("El servicio de aplicaciones no responde");
+            throw new TimeoutException("El servicio de edificio no responde");
         }
 
         return (EdificioOcupacionDTO) respuesta;

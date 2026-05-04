@@ -67,4 +67,9 @@ public class EspacioRepositoryJpa implements EspacioRepository {
                 .toList();
     }
 
+    @Override
+    public List<String> findIdsByAforo(int ocupantesNecesarios) { // Solo un int
+        return jpa.findIdsByAforo(ocupantesNecesarios);
+    }
+
 }

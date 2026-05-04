@@ -15,6 +15,7 @@ import com.adabyron.domain.persona.Rol;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -153,4 +154,8 @@ public class EspacioService {
         return espacio.getAsignacion();
     }
 
+    @Transactional(readOnly = true)
+    public List<String> obtenerIdsPorAforo(int ocupantes) {
+        return espacioRepository.findIdsByAforo(ocupantes);
+    }
 }

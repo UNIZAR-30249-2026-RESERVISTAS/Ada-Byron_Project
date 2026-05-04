@@ -1,6 +1,7 @@
 package com.adabyron.infraestructure.rabbit;
 
 import com.adabyron.application.edificio.CambiarPorcentajeOcupacionDTO;
+import com.adabyron.application.edificio.EdificioHorarioDTO;
 import com.adabyron.application.edificio.EdificioOcupacionDTO;
 import com.adabyron.application.edificio.EdificioService;
 import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
