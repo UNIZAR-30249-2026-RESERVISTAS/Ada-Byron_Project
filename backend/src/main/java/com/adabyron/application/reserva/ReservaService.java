@@ -1,6 +1,8 @@
 package com.adabyron.application.reserva;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -99,6 +101,109 @@ public class ReservaService {
 
         return reservaRepository.save(reserva);
     }
+
+    public Reserva crearReservaCriterios(CrearReservaPorCriteriosDTO dto) {
+
+        // 1. Validar persona
+        var persona = personaRepository.findById(dto.reservadaPorId())
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Persona no encontrada: " + dto.reservadaPorId()));
+
+        // 2. Construir intervalo
+        IntervaloTemporal intervalo = IntervaloTemporal.of(
+            dto.fecha(),
+            dto.horaInicio(),
+            dto.duracionMinutos()
+        );
+
+        // 3. Buscar espacios disponibles
+        List<Espacio> disponibles = espacioRepository.findDisponiblesByCategoria(
+                intervalo.fechaInicio(),
+                intervalo.fechaFin(),
+                dto.categoria()
+        );
+
+        // ⚠️ Si no hay ninguno, fallo directo
+        if (disponibles.isEmpty()) {
+            throw new IllegalStateException("No hay espacios disponibles");
+        }
+
+        // 4. Ordenar por capacidad (small-first recomendado)
+        List<Espacio> listaModificable = new ArrayList<>(disponibles);
+        listaModificable.sort(Comparator.comparingInt(Espacio::getNumOcupantes));
+
+
+        // 5. Seleccionar espacios según criterios
+        List<Espacio> seleccionados = new ArrayList<>();
+        int capacidadEspacios = 0;
+
+        for (Espacio espacio : listaModificable) {
+            seleccionados.add(espacio);
+            capacidadEspacios += espacio.getNumOcupantes();
+
+            if (capacidadEspacios >= dto.numeroAsistentes()) {
+                break;
+            }
+        }
+
+        // 6. Validar que se cumplen criterios
+        if (capacidadEspacios < dto.numeroAsistentes()) {
+            throw new IllegalStateException("No hay suficientes espacios para cubrir la capacidad requerida");
+        }
+
+        // 7. Convertir a IDs
+        List<EspacioId> espacioIds = seleccionados.stream()
+            .map(Espacio::getId)
+            .toList();
+
+        // 8. Crear reserva
+        var reserva = ReservaFactory.crearNuevaReserva(
+            espacioIds,
+            persona.getPersonaId(),
+            dto.tipoUso(),
+            dto.numeroAsistentes(),
+            intervalo,
+            dto.detallesAdicionales()
+        );
+
+        // 9. Validaciones
+        try {
+            for (Espacio espacio : seleccionados) {
+
+                List<Reserva> reservasExistentes =
+                        reservaRepository.findActivasByEspacioId(espacio.getId().id());
+
+                var asignacion = espacio.getAsignacion();
+                var deptoEspacio = (asignacion != null && asignacion.esDepartamento())
+                        ? asignacion.getDepartamentoId()
+                        : null;
+
+                // --- ESTE ES EL CAMBIO CLAVE ---
+                // Le decimos al validador que en este espacio solo meteremos
+                // a los que caben. Si pedimos 20 y el aula es de 8, aquí pondrá un 8.
+                int asistentesEnEsteEspacio = Math.min(dto.numeroAsistentes(), espacio.getNumOcupantes());
+
+                validacionService.validar(
+                        persona,
+                        espacio,
+                        asistentesEnEsteEspacio, // Pasamos la nueva variable calculada
+                        intervalo,
+                        Edificio.getPorcentajeOcupacionMaxima(),
+                        reservasExistentes,
+                        deptoEspacio
+                );
+            }
+
+            reserva.confirmar();
+
+        } catch (Exception ex) {
+            reserva.rechazar(ex.getMessage());
+        }
+
+        return reservaRepository.save(reserva);
+}
+
+
 
 
     /**

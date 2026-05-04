@@ -106,6 +106,23 @@ public class ReservaController {
         return ResponseEntity.status(HttpStatus.CREATED)
                              .body(reservaConfirmada);
     }
+
+    @PostMapping("/criterios")
+    public ResponseEntity<ReservaDTO> crearPorCriterios(
+            @RequestBody CrearReservaPorCriteriosDTO dto
+    ) throws TimeoutException {
+
+        Object respuesta = rabbitTemplate.convertSendAndReceive("reserva.crear.criterios", dto);
+
+        if (respuesta == null) {
+            throw new TimeoutException();
+        }
+
+        ReservaDTO reserva = (ReservaDTO) respuesta;
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(reserva);
+    }
  
     @Operation(
         summary = "Listar reservas activas",

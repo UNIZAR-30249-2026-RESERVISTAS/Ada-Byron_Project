@@ -6,6 +6,7 @@ import com.adabyron.domain.espacio.EspacioId;
 import com.adabyron.domain.espacio.EspacioRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,6 +51,20 @@ public class EspacioRepositoryJpa implements EspacioRepository {
                 .toList();
     }
 
+    @Override
+    public List<Espacio> findDisponibles(LocalDateTime inicio, LocalDateTime fin) {
+        return jpa.findDisponibles(inicio, fin)
+                .stream()
+                .map(EspacioConverters::toDomain)
+                .toList();
+    }
 
+    @Override
+    public List<Espacio> findDisponiblesByCategoria(LocalDateTime inicio, LocalDateTime fin, String categoria) {
+        return jpa.findDisponiblesByCategoria(inicio, fin, categoria)
+                .stream()
+                .map(EspacioConverters::toDomain) // O el mapper que uses
+                .toList();
+    }
 
 }
