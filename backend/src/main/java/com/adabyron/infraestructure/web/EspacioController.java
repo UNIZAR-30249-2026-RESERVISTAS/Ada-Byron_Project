@@ -1,9 +1,6 @@
 package com.adabyron.infraestructure.web;
 
 import com.adabyron.application.espacio.*;
-import com.adabyron.application.persona.PersonaDTO;
-import com.adabyron.application.reserva.ReservaDTO;
-import com.adabyron.domain.espacio.Categoria;
 import com.adabyron.domain.espacio.HorarioDisponible;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
