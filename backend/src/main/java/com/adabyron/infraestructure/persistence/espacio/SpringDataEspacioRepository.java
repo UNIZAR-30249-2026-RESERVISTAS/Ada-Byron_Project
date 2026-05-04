@@ -37,4 +37,7 @@ public interface SpringDataEspacioRepository extends JpaRepository<EspacioJpaEnt
             @Param("inicio") LocalDateTime inicio,
             @Param("fin") LocalDateTime fin,
             @Param("categoria") String categoria);
+
+    @Query("SELECT e.id FROM EspacioJpaEntity e WHERE e.numOcupantes >= :ocupantesNecesarios")
+    List<String> findIdsByAforo(@Param("ocupantesNecesarios") int ocupantesNecesarios);
 }

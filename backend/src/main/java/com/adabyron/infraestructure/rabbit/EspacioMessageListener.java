@@ -1,6 +1,7 @@
 package com.adabyron.infraestructure.rabbit;
 
 import com.adabyron.application.espacio.*;
+import com.adabyron.domain.edificio.Edificio;
 import com.adabyron.domain.espacio.Asignacion;
 import com.adabyron.domain.espacio.Categoria;
 import com.adabyron.domain.espacio.Espacio;
@@ -11,6 +12,7 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -143,5 +145,18 @@ public class EspacioMessageListener {
         } catch (IllegalArgumentException | OperacionNoAutorizadaException | EspacioNotFoundException ex) {
             throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
         }
+    }
+
+    @RabbitListener(queues = "espacio.filtrarPorAforo")
+    public List<String> onFiltrarPorAforo(Integer personasBuscadas) {
+
+        // El Listener obtiene el porcentaje actual directamente del dominio
+        double porcentajeActual = Edificio.getPorcentajeOcupacionMaxima();
+
+        int ocupantesNecesarios = (int) Math.ceil(personasBuscadas / porcentajeActual);
+
+        // Hace la llamada al servicio que ejecuta la query en la base de datos
+        // y devuelve directamente la lista de IDs (RabbitMQ se encarga de serializarla)
+        return espacioService.obtenerIdsPorAforo(ocupantesNecesarios);
     }
 }

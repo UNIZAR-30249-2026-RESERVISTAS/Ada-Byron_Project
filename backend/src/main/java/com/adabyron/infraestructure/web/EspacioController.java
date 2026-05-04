@@ -1,6 +1,7 @@
 package com.adabyron.infraestructure.web;
 
 import com.adabyron.application.espacio.*;
+import com.adabyron.domain.edificio.Edificio;
 import com.adabyron.domain.espacio.HorarioDisponible;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,8 +13,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
@@ -51,7 +54,7 @@ public class EspacioController {
         Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.buscar.porId", id);
 
         if (respuesta == null) {
-            throw new TimeoutException("El servidor de aplicaciones no responde.");
+            throw new TimeoutException("El servicio de espacios no responde.");
         }
 
         return (EspacioDTO) respuesta;
@@ -78,7 +81,7 @@ public class EspacioController {
         CambiarCategoriaCommand comando = new CambiarCategoriaCommand(id, dto);
         Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.cambiarCategoria", comando);
         if (respuesta == null) {
-            throw new TimeoutException("El servidor de aplicaciones no responde.");
+            throw new TimeoutException("El servicio de espacios no responde.");
         }
 
         return (EspacioDTO) respuesta;
@@ -105,7 +108,7 @@ public class EspacioController {
         CambiarEstadoCommand comando = new CambiarEstadoCommand(id, dto);
         Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.cambiarEstado", comando);
         if (respuesta == null) {
-            throw new TimeoutException("El servidor de aplicaciones no responde.");
+            throw new TimeoutException("El servicio de espacios no responde.");
         }
 
         return (EspacioDTO) respuesta;
@@ -139,7 +142,7 @@ public class EspacioController {
         //);
         Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.obtenerHorario", id);
         if (respuesta == null) {
-            throw new TimeoutException("El servidor de aplicaciones no responde.");
+            throw new TimeoutException("El servicio de espacios no responde.");
         }
 
         return (HorarioDTO) respuesta;
@@ -177,7 +180,7 @@ public class EspacioController {
         CambiarHorarioCommand comando = new CambiarHorarioCommand(id, nuevoHorario, gerenteId);
         Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.cambiarHorario", comando);
         if (respuesta == null) {
-            throw new TimeoutException("El servidor de aplicaciones no responde.");
+            throw new TimeoutException("El servicio de espacios no responde.");
         }
 
         return (EspacioDTO) respuesta;
@@ -211,7 +214,7 @@ public class EspacioController {
         RestablecerHorarioCommand comando =  new RestablecerHorarioCommand(id, gerenteId);
         Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.restablecerHorario", comando);
         if (respuesta == null) {
-            throw new TimeoutException("El servidor de aplicaciones no responde.");
+            throw new TimeoutException("El servicio de espacios no responde.");
         }
 
         return (EspacioDTO) respuesta;
@@ -238,7 +241,7 @@ public class EspacioController {
         Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.obtenerAsignacion", id);
 
         if (respuesta == null) {
-            throw new TimeoutException("El servidor de aplicaciones no responde.");
+            throw new TimeoutException("El servicio de espacios no responde.");
         }
 
         return (AsignacionDTO) respuesta;
@@ -267,7 +270,7 @@ public class EspacioController {
         Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.asignarAEina", id);
 
         if (respuesta == null) {
-            throw new TimeoutException("El servidor de aplicaciones no responde.");
+            throw new TimeoutException("El servicio de espacios no responde.");
         }
 
         return (EspacioDTO) respuesta;
@@ -302,7 +305,7 @@ public class EspacioController {
         Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.asignarADepartamento", comando);
 
         if (respuesta == null) {
-            throw new TimeoutException("El servidor de aplicaciones no responde.");
+            throw new TimeoutException("El servicio de espacios no responde.");
         }
 
         return (EspacioDTO) respuesta;
@@ -337,11 +340,24 @@ public class EspacioController {
         Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.asignarAPersonas", comando);
 
         if (respuesta == null) {
-            throw new TimeoutException("El servidor de aplicaciones no responde.");
+            throw new TimeoutException("El servicio de espacios no responde.");
         }
 
         return (EspacioDTO) respuesta;
 	}
+
+    @GetMapping("/filtrarPorAforo")
+    public ResponseEntity<List<String>> filtrarPorAforo(@RequestParam("personas") int personasBuscadas) throws TimeoutException {
+        Object respuesta = rabbitTemplate.convertSendAndReceive("espacio.filtrarPorAforo", personasBuscadas);
+
+        if (respuesta == null) {
+            throw new TimeoutException("El servicio de espacios no responde.");
+        }
+
+        List<String> espaciosValidos = (List<String>) respuesta;
+
+        return ResponseEntity.ok(espaciosValidos);
+    }
 
     @ResponseStatus(value = HttpStatus.REQUEST_TIMEOUT)
     @ExceptionHandler(TimeoutException.class)

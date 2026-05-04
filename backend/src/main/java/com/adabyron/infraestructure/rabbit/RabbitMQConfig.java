@@ -147,6 +147,9 @@ public class RabbitMQConfig {
     @Bean
     public Queue queueAsignarAPersonas() { return new Queue("espacio.asignarAPersonas"); }
 
+    @Bean
+    public Queue queueFiltrarPorAforo() {  return new Queue("espacio.filtrarPorAforo"); }
+
 
 
 
