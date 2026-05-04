@@ -57,10 +57,10 @@ public class EdificioController {
     public EdificioOcupacionDTO obtenerPorcentajeOcupacion() throws TimeoutException {
         //return new EdificioOcupacionDTO(edificioService.obtenerPorcentajeOcupacionMaxima());
 
-        Object respuesta = rabbitTemplate.convertSendAndReceive("edificio.porcentajeOcupacion");
+        Object respuesta = rabbitTemplate.convertSendAndReceive("edificio.porcentajeOcupacion", "GET");
 
         if (respuesta == null) {
-            throw new TimeoutException("El servicio de aplicaciones no responde");
+            throw new TimeoutException("El servicio de edificio no responde");
         }
 
         return (EdificioOcupacionDTO) respuesta;
@@ -78,7 +78,7 @@ public class EdificioController {
         Object respuesta = rabbitTemplate.convertSendAndReceive("edificio.cambiarPorcentajeOcupacion", dto);
 
         if (respuesta == null) {
-            throw new TimeoutException("El servicio de aplicaciones no responde");
+            throw new TimeoutException("El servicio de edificio no responde");
         }
 
         return (EdificioOcupacionDTO) respuesta;
