@@ -36,7 +36,8 @@ export default function PaginaPrincipal() {
   const [filterOcupantes, setFilterOcupantes] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modoReserva, setModoReserva] = useState<'ids' | 'criterios'>('ids');
-  
+  const [ocupacion, setOcupacion] = useState(0.0);
+
   const [modalContent, setModalContent] = useState<ReservaData>({
     espacioIds: '',
     tipoUso: '',
@@ -48,6 +49,34 @@ export default function PaginaPrincipal() {
     numeroEspacios: 0,
     categoria: ''
   });
+
+  useEffect(() => {
+    const fetchOcupacion = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/edificio/ocupacion`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error en la petición: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        setOcupacion(data.porcentajeOcupacionMaxima);
+
+      } catch (error) {
+        console.error("Error al cargar la ocupación:", error);
+      }
+    };
+
+    // No olvides llamar a la función dentro del useEffect
+    fetchOcupacion();
+  }, []); // El array vacío asegura que se ejecute solo al montar el componente
 
   // Reemplazamos useActionState por estados simples
   const [isPending, setIsPending] = useState(false);
@@ -163,14 +192,14 @@ export default function PaginaPrincipal() {
         const mensajeBase = result.data?.estado || 'Reserva completada';
 
         // 3. Montamos el mensaje final: "CONFIRMADA: Aulas 301, 002"
-        const mensajeFinal = idsTexto 
-          ? `${mensajeBase}: ${etiqueta}${idsTexto}` 
+        const mensajeFinal = idsTexto
+          ? `${mensajeBase}: ${etiqueta}${idsTexto}`
           : mensajeBase;
-        
+
         setEstadoReserva(mensajeFinal);
         setMostrarPopUp(true);
         setIsModalOpen(false);
-        
+
         // Dejamos el popup 4 segundos para que dé tiempo a leer los IDs
         setTimeout(() => setMostrarPopUp(false), 4000);
       } else {
@@ -229,35 +258,56 @@ export default function PaginaPrincipal() {
     }
   };
 
+
   useEffect(() => {
-    const fetchData = async () => {
-      setGeoData(null);
-      try {
-        const timestamp = new Date().getTime();
-        let url = `http://localhost:5000/collections/${selectedFloor}/items?limit=100&_=${timestamp}`;
-        if (filterCategory) {
-          const categoryUpper = filterCategory.toUpperCase();
-          url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&USO=${categoryUpper}`;
+  const peticionTimeout = setTimeout(async () => {
+    
+    setGeoData(null);
+    try {
+      let idsValidos = null;
+
+      if (filterOcupantes) {
+        const resSpring = await fetch(`${API_URL}/api/espacios/filtrarPorAforo?personas=${filterOcupantes}`);
+        if (resSpring.ok) {
+          idsValidos = await resSpring.json();
         }
-        else if (filterId) {
-          url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&espacio_id=${filterId}`;
-        }
-        
-        const response = await fetch(url, {
-          cache: 'no-store',
-          headers: {
-            'Pragma': 'no-cache',
-            'Cache-Control': 'no-cache',
-          },
-        });
-        const data = await response.json();
-        setGeoData(data);
-      } catch (error) {
-        console.error("Error cargando la planta:", error);
       }
-    };
-    fetchData();
-  }, [selectedFloor, filterCategory, filterId, filterOcupantes]);
+
+      const timestamp = new Date().getTime();
+      let url = `http://localhost:5000/collections/${selectedFloor}/items?limit=100&_=${timestamp}`;
+      
+      if (filterCategory) {
+        const categoryUpper = filterCategory.toUpperCase();
+        url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&USO=${categoryUpper}`;
+      } else if (filterId) {
+        url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&espacio_id=${filterId}`;
+      }
+
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache',
+        },
+      });
+      let geoJsonData = await response.json();
+
+      if (idsValidos !== null) {
+        geoJsonData.features = geoJsonData.features.filter((feature: any) => 
+          idsValidos.includes(feature.properties.espacio_id)
+        );
+      }
+
+      setGeoData(geoJsonData);
+
+    } catch (error) {
+      console.error("Error cargando la planta o cruzando datos:", error);
+    }
+    
+  }, 400);
+  return () => clearTimeout(peticionTimeout);
+
+}, [selectedFloor, filterCategory, filterId, filterOcupantes]);
 
   return (
     <div className="flex flex-row h-screen w-screen overflow-hidden">
@@ -336,6 +386,15 @@ export default function PaginaPrincipal() {
             </button>
           </div>
         </div>
+        {user?.roles?.includes('GERENTE') && (
+          <div className='flex flex-row'>
+            <div>
+              <p style={{ fontSize: '12px', color: '#1B2A4A', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
+                Porcentaje de ocupacion actual: {ocupacion}%
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="pt-4 pl-2" style={{ borderTop: '1px solid #D4CFC6' }}>
           <span
