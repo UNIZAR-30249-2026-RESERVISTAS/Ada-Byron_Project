@@ -179,13 +179,39 @@ export default function PaginaPrincipal() {
       if (result?.success) {
         // 1. Extraemos los IDs del array 'espacioIds' que viene en 'data'
         const idsArray = result.data?.espacioIds || [];
-        let idsTexto = "";
-        let etiqueta = "";
+        let idsTexto = '';
+        let etiqueta = 'Espacio';
 
         if (idsArray.length > 0) {
-          idsTexto = idsArray.join(', '); // Unimos los IDs con coma: "301, 002"
-          // Si hay más de uno ponemos "Aulas", si no "Aula"
-          etiqueta = idsArray.length > 1 ? "Aulas " : "Aula ";
+          idsTexto = idsArray.join(', ');
+
+          // Pedimos la categoria de cada espacio
+          const categorias = await Promise.all(
+            idsArray.map(async (id: string) => {
+              try {
+                const res = await fetch(`${API_URL}/api/espacios/${id}`);
+                if (!res.ok) return null;
+                const data = await res.json();
+                return data.categoria as string;
+              } catch {
+                return null;
+              }
+            })
+          );
+
+          const categoriasLimpias = categorias.filter(Boolean) as string[];
+          const categoriasUnicas = Array.from(new Set(categoriasLimpias));
+
+          if (categoriasUnicas.length === 1) {
+            // "Aula", "Despacho", "Seminario", etc.
+            etiqueta = categoriasUnicas[0] + ' ';
+          } else if (categoriasUnicas.length > 1) {
+            // Mezcla de tipos: "Aula/Despacho"
+            etiqueta = categoriasUnicas.join('/') + ' ';
+          } else {
+            // Fallback si no se pudieron cargar
+            etiqueta = idsArray.length > 1 ? 'Espacios ' : 'Espacio ';
+          }
         }
 
         // 2. Obtenemos el estado (CONFIRMADA)
