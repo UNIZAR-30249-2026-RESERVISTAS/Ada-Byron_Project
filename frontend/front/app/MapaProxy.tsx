@@ -7,15 +7,18 @@ const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 export default function MapaProxy({ data, floorId }: { data: any, floorId: string }) {
   const getStyle = (feature: any) => {
     const tipo = feature.properties?.USO || 'default';
-    if (tipo === 'LABORATORIO') {
+    const tipoNormalizado = tipo.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+
+
+    if (tipoNormalizado === 'LABORATORIO') {
       return { color: 'orange', weight: 2, fillColor: '#FFCC80', fillOpacity: 0.6 };
-    } else if (tipo === 'DESPACHO') {
+    } else if (tipoNormalizado === 'DESPACHO') {
       return { color: 'purple', weight: 2, fillColor: '#E1BEE7', fillOpacity: 0.6 };
-    } else if (tipo === 'AULA') {
+    } else if (tipoNormalizado === 'AULA') {
       return { color: 'blue', weight: 2, fillColor: 'lightblue', fillOpacity: 0.6 };
-    } else if (tipo === 'SEMINARIO') {
+    } else if (tipoNormalizado === 'SEMINARIO') {
       return { color: 'green', weight: 2, fillColor: 'lightgreen', fillOpacity: 0.6 };
-    } else if (tipo === 'SALA COMÚN') {
+    } else if (tipoNormalizado === 'SALA COMUN' || tipoNormalizado === 'SALA COMEN') {
       return { color: 'red', weight: 1, fillColor: '#ef5757', fillOpacity: 0.6 };
     } else {
       return { color: '#CCCCCC', weight: 1, fillColor: '#FFFFFF', fillOpacity: 0.3 }
