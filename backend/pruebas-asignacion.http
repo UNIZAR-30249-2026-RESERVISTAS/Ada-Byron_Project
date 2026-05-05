@@ -90,6 +90,31 @@ Content-Type: {{contentType}}
 ### Verificar asignacion actual
 GET {{baseUrl}}/{{labId}}/asignacion
 
+
+
+@labId2 = 434
+
+### ----------------------------------------------------------
+### 1) Consultar asignacion inicial de laboratorio
+### ----------------------------------------------------------
+GET {{baseUrl}}/{{labId2}}/asignacion
+
+### ----------------------------------------------------------
+### 2) Asignar laboratorio a departamento 2 (debe funcionar) (funciona correctamente)
+### ----------------------------------------------------------
+PUT {{baseUrl}}/{{labId2}}/asignacion/departamento
+Content-Type: {{contentType}}
+
+{
+  "departamentoId": 2
+}
+
+### ----------------------------------------------------------
+### 1) Consultar asignacion inicial de laboratorio
+### ----------------------------------------------------------
+GET {{baseUrl}}/{{labId2}}/asignacion
+
+
 ### ----------------------------------------------------------
 ### 3) Validar impacto en reservas (REQ-F4)
 ### ----------------------------------------------------------

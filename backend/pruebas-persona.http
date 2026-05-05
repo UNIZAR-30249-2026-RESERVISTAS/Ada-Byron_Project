@@ -10,11 +10,11 @@ POST {{baseUrl}}
 Content-Type: {{contentType}}
 
 {
-    "nombre": "Curro Valero",
-    "email": "842545@unizar.es",
+    "nombre": "Diego",
+    "email": "869800@unizar.es",
     "password": "password123",
     "rol": "TECNICO_LABORATORIO",
-    "departamentoId": 1
+    "departamentoId": 2
 }
 
 ###  Crear una persona (GERENTE)
@@ -29,6 +29,36 @@ Content-Type: {{contentType}}
     "rol": "GERENTE",
     "departamentoId": null
 }
+
+### Creamos un Docente Investigador para probar la asignación de gerente 
+# @name crearDocenteInvestigador
+POST {{baseUrl}}
+Content-Type: {{contentType}}
+
+{
+  "nombre": "Pablo",
+  "email": "pablo.garcia@example.com",
+  "password": "password123",
+  "rol": "DOCENTE_INVESTIGADOR",
+  "departamentoId": 1
+}
+
+@idDocente2 = {{crearDocenteInvestigador.response.body.id}}
+
+@authUrl = http://localhost:8081/api/auth/login
+
+### Login (gera la cookie de sesion)
+# @name login
+POST {{authUrl}}
+Content-Type: application/json
+
+{
+  "email": "arturo.sanchez@example.com",
+  "password": "password123"
+}
+
+### Actualizo y le añado el rol de gerente
+PUT {{baseUrl}}/{{idDocente2}}/gerente
 
 ### Guardar ID respuesta para siguientes peticiones (si tu cliente REST lo soporta, sino copiar a mano)
 @idEstudiante = {{crearEstudiante.response.body.id}}
@@ -115,3 +145,31 @@ Content-Type: {{contentType}}
 {
     "departamentoId": 2
 }
+
+
+@authUrl = http://localhost:8081/api/auth/login
+
+### Login (gera la cookie de sesion)
+# @name login
+POST {{authUrl}}
+Content-Type: application/json
+
+{
+  "email": "arturo.sanchez@example.com",
+  "password": "password123"
+}
+
+
+# Paso 15: Cambiar de dpto a un tecnico de laboratorio (ana.garcia@example.com, dtpo: 1)
+@idDocente2 = 187d7297-5672-46cc-b06a-2a4c1fe8775f
+
+### La cambio al dpt2, la reserva que tenia confirmada, pasa a ser rechaazada, porque el tecnico de laboratorio no puede ser del dpto de Informatica
+PUT {{baseUrl}}/{{idDocente2}}/departamento
+Content-Type: {{contentType}}
+
+{
+    "departamentoId": 2
+}
+
+### 2. Verificar que la reserva pasó a POTENCIALMENTE_INVALIDA
+GET {{baseUrl}}/potencialmente-invalidas

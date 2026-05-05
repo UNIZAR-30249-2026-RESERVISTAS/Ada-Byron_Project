@@ -278,7 +278,8 @@ export default function PaginaPrincipal() {
       
       if (filterCategory) {
         const categoryUpper = filterCategory.toUpperCase();
-        url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&USO=${categoryUpper}`;
+        const categoryFiltro =filterCategory === 'sala común' ? 'SALA COMéN' : categoryUpper;
+        url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&USO=${encodeURIComponent(categoryFiltro)}`;
       } else if (filterId) {
         url += `&properties=USO,espacio_id&additionalProp1=%7B%7D&skipGeometry=false&offset=0&espacio_id=${filterId}`;
       }
@@ -291,7 +292,6 @@ export default function PaginaPrincipal() {
         },
       });
       let geoJsonData = await response.json();
-
       if (idsValidos !== null) {
         geoJsonData.features = geoJsonData.features.filter((feature: any) => 
           idsValidos.includes(feature.properties.espacio_id)
@@ -831,9 +831,6 @@ export default function PaginaPrincipal() {
       {mostrarPopUp && (
         <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="bg-[#1B2A4A] text-white px-8 py-4 rounded-full shadow-2xl flex items-center space-x-3 border-2 border-[#1B2A4A] whitespace-nowrap">
-            <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-            </svg>
             <span className="font-bold">{estadoReserva}</span>
           </div>
         </div>
