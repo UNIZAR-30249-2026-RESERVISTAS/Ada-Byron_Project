@@ -4,6 +4,8 @@ import com.adabyron.application.persona.*;
 import com.adabyron.domain.persona.Persona;
 import com.adabyron.domain.persona.exception.DepartamentoRequeridoException;
 import com.adabyron.domain.persona.exception.PersonaNotFoundException;
+import com.adabyron.domain.persona.exception.RolIncompatibleException;
+import com.adabyron.domain.persona.exception.RolInmutable;
 import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -68,7 +70,8 @@ public class PersonaMessageListener {
             );
             return PersonaDTO.fromEntity(persona);
 
-        } catch (IllegalArgumentException | OperacionNoAutorizadaException | PersonaNotFoundException ex) {
+        } catch (IllegalArgumentException | OperacionNoAutorizadaException | PersonaNotFoundException | RolInmutable |
+                 RolIncompatibleException ex) {
             throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
         }
     }
