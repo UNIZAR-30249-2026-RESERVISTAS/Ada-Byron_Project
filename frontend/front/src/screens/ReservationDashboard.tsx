@@ -7,8 +7,11 @@ import {
     Trash2,
     ChevronLeft,
     ChevronRight,
+    Check,
     BookMarked
 } from 'lucide-react';
+import { getCurrentUser, isGerente } from '../services/auth';
+
 
 // Interfaz adaptada a la estructura de PersonaDTO del backend
 interface Reservation {
@@ -69,6 +72,8 @@ export function ReservationDashboard() {
     const [estadoFilter, setEstadoFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [nombres, setNombres] = useState<Record<string, string>>({});
+    const currentUser = getCurrentUser();
+    const puedeRevalidar = !!currentUser && isGerente(currentUser);
 
     // Función para cargar los usuarios
     const fetchUsers = async () => {
@@ -92,6 +97,29 @@ export function ReservationDashboard() {
     useEffect(() => {
         fetchUsers();
     }, []);
+
+    const handleRevalidate = async (reservaId: string) => {
+        if (!currentUser) return;
+
+        const res = await fetch(
+            `${API_URL}/api/reservas/${reservaId}/revalidar?gerenteId=${currentUser.id}`,
+            {
+            method: 'PUT',
+            credentials: 'include',
+            }
+        );
+
+        if (!res.ok) {
+            const text = await res.text();
+            alert(text || 'No se pudo revalidar la reserva.');
+            return;
+        }
+
+        // Actualiza estado en UI
+        setReservations(prev =>
+            prev.map(r => (r.id === reservaId ? { ...r, estado: 'CONFIRMADA' } : r))
+        );
+    };
 
     // Función para eliminar una reserva
     const handleDeleteReservation = async (id: string, solicitanteId: string) => {
@@ -117,11 +145,6 @@ export function ReservationDashboard() {
         }
     };
 
-    // Función para editar un usuario (por ahora solamente muestra un alert)
-    const handleEditReservation = (reservationId: string) => {
-        alert(`Funcionalidad de edición de la reserva ${reservationId} aún no implementada.`);
-    };
-
     const buscarNombreUsuario = async (personaId: string) => {
         try { // Sustituir por variable de entorno
             const response = await fetch(`${API_URL}/api/personas/${personaId}`, {
@@ -141,7 +164,7 @@ export function ReservationDashboard() {
             // Recorremos la1 lista de usuarios que acabamos de descargar
             reservations.forEach(r => {
                 // Para evitar llamadas infinitas o repetidas, comprobamos si ya lo hemos buscado
-                if (nombres[r.id] === undefined) {
+                if (nombres[r.reservadaPorId] === undefined) {
                     buscarNombreUsuario(r.reservadaPorId);
                 }
             });
@@ -358,22 +381,17 @@ export function ReservationDashboard() {
                                         {/* Acciones sobre el usuario (por el momento sin funcionalidad) */}
                                         <td className="px-5 py-3.5">
                                             <div className="flex items-center gap-1">
-                                                <button
-                                                    onClick={() => handleEditReservation(reservation.id)}
-                                                    className="p-2 rounded-lg transition-all"
-                                                    title="Editar usuario"
-                                                    onMouseEnter={e => {
-                                                        e.currentTarget.style.backgroundColor = 'rgba(59,111,212,0.1)';
-                                                    }}
-                                                    onMouseLeave={e => {
-                                                        e.currentTarget.style.backgroundColor = 'transparent';
-                                                    }}
-                                                >
-                                                    <Edit className="size-4" style={{ color: '#8A8F9E' }}
-                                                        onMouseEnter={e => (e.currentTarget.style.color = '#3B6FD4')}
-                                                        onMouseLeave={e => (e.currentTarget.style.color = '#8A8F9E')}
-                                                    />
-                                                </button>
+                                                {puedeRevalidar && reservation.estado === 'POTENCIALMENTE_INVALIDA' && (
+                                                    <button
+                                                        onClick={() => handleRevalidate(reservation.id)}
+                                                        className="p-2 rounded-lg transition-all"
+                                                        title="Revalidar reserva"
+                                                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(42,155,111,0.12)'; }}
+                                                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                                    >
+                                                        <Check className="size-4" style={{ color: '#2A9B6F' }} />
+                                                    </button>
+                                                    )}
                                                 <button
                                                     onClick={() => handleDeleteReservation(reservation.id, reservation.reservadaPorId)}
                                                     className="p-2 rounded-lg transition-all"
