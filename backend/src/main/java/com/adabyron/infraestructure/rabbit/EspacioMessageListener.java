@@ -13,7 +13,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.UUID;
 
 @Component
 public class EspacioMessageListener {
@@ -40,8 +39,7 @@ public class EspacioMessageListener {
         try {
             Espacio espacio = espacioService.cambiarCategoria(
                     comando.espacioId(),
-                    Categoria.desdeNombre(comando.dto().categoria())
-            );
+                    Categoria.desdeNombre(comando.dto().categoria()));
             return EspacioDTO.fromEntity(espacio);
 
         } catch (IllegalArgumentException | OperacionNoAutorizadaException | EspacioNotFoundException ex) {
@@ -54,8 +52,7 @@ public class EspacioMessageListener {
         try {
             Espacio espacio = espacioService.cambiarReservable(
                     comando.espacioId(),
-                    comando.dto().reservable()
-            );
+                    comando.dto().reservable());
             return EspacioDTO.fromEntity(espacio);
 
         } catch (IllegalArgumentException | OperacionNoAutorizadaException | EspacioNotFoundException ex) {
@@ -80,11 +77,11 @@ public class EspacioMessageListener {
             Espacio espacio = espacioService.cambiarHorario(
                     comando.idEspacio(),
                     comando.nuevoHorario(),
-                    comando.idGerente()
-            );
+                    comando.idGerente());
             return EspacioDTO.fromEntity(espacio);
 
-        } catch (IllegalArgumentException | HorarioInvalidoException | OperacionNoAutorizadaException | EspacioNotFoundException ex) {
+        } catch (IllegalArgumentException | HorarioInvalidoException | OperacionNoAutorizadaException
+                | EspacioNotFoundException ex) {
             throw new AmqpRejectAndDontRequeueException(ex.getMessage(), ex);
         }
     }
@@ -94,8 +91,7 @@ public class EspacioMessageListener {
         try {
             Espacio espacio = espacioService.restablecerHorario(
                     comando.idEspacio(),
-                    comando.idGerente()
-            );
+                    comando.idGerente());
             return EspacioDTO.fromEntity(espacio);
 
         } catch (IllegalArgumentException | OperacionNoAutorizadaException | EspacioNotFoundException ex) {

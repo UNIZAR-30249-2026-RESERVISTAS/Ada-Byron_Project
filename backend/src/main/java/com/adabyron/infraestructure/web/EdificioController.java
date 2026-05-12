@@ -1,7 +1,6 @@
 package com.adabyron.infraestructure.web;
 
 import com.adabyron.application.edificio.CambiarPorcentajeOcupacionDTO;
-import com.adabyron.application.edificio.EdificioHorarioDTO;
 import com.adabyron.application.edificio.EdificioOcupacionDTO;
 import com.adabyron.application.edificio.EdificioService;
 import com.adabyron.domain.reserva.exception.OperacionNoAutorizadaException;
@@ -9,7 +8,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
@@ -39,7 +37,8 @@ public class EdificioController {
 
     private boolean esGerente(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
-        if (session == null) return false;
+        if (session == null)
+            return false;
 
         Object rolesObj = session.getAttribute("roles");
         return rolesObj instanceof Collection<?> roles
@@ -55,7 +54,8 @@ public class EdificioController {
 
     @GetMapping("/ocupacion")
     public EdificioOcupacionDTO obtenerPorcentajeOcupacion() throws TimeoutException {
-        //return new EdificioOcupacionDTO(edificioService.obtenerPorcentajeOcupacionMaxima());
+        // return new
+        // EdificioOcupacionDTO(edificioService.obtenerPorcentajeOcupacionMaxima());
 
         Object respuesta = rabbitTemplate.convertSendAndReceive("edificio.porcentajeOcupacion", "GET");
 
@@ -69,11 +69,10 @@ public class EdificioController {
     @PutMapping("/ocupacion")
     public EdificioOcupacionDTO cambiarPorcentajeOcupacion(
             @RequestBody CambiarPorcentajeOcupacionDTO dto,
-            HttpServletRequest request
-    ) throws TimeoutException {
+            HttpServletRequest request) throws TimeoutException {
         requireGerente(request);
-        //double nuevo = edificioService.cambiarPorcentajeOcupacionMaxima(dto);
-        //return new EdificioOcupacionDTO(nuevo);
+        // double nuevo = edificioService.cambiarPorcentajeOcupacionMaxima(dto);
+        // return new EdificioOcupacionDTO(nuevo);
 
         Object respuesta = rabbitTemplate.convertSendAndReceive("edificio.cambiarPorcentajeOcupacion", dto);
 
