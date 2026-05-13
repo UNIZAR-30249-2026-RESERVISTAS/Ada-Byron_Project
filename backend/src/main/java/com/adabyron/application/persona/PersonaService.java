@@ -188,7 +188,8 @@ public class PersonaService {
                 reserva.marcarComoPotencialmenteInvalida(motivo);
                 reservaRepository.save(reserva);
 
-                // Notificar al usuario
+                // Ya no se notifica al usuario cuando pasa a potencialmente invalida
+                /*
                 try {
                     String contenido = "Tu reserva (ID: " + reserva.getId() + ") ha pasado a estado "
                             + "POTENCIALMENTE_INVALIDA debido a un cambio de departamento.\n"
@@ -199,6 +200,7 @@ public class PersonaService {
                     // Log pero no fallar la operación
                     System.err.println("Error enviando email de validación: " + e.getMessage());
                 }
+                */
             }
         }
     }
