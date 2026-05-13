@@ -101,8 +101,11 @@ public class EdificioService {
                 UUID personaId = reserva.getReservadaPorIdRaw();
                 var persona = personaRepository.findById(personaId)
                         .orElseThrow(() -> new PersonaNotFoundException(personaId));
+                /*
                 String mail = persona.getEmail();
+                // Ya no se notifica al usuario cuando pasa a potencialmente invalida
                 mailService.enviarCorreoInvalida(mail, contenido);
+                */
                 reservaRepository.save(reserva);
             }
         }

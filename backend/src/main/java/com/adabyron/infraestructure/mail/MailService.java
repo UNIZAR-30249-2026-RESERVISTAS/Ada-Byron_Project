@@ -30,6 +30,8 @@ public class MailService {
         mailSender.send(mensaje);
     }
 
+    // Ya no se notifica al usuario cuando pasa a potencialmente invalida
+    /*
     public void enviarCorreoInvalida(String destinatario, String contenido){
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setTo(destinatario);
@@ -38,4 +40,5 @@ public class MailService {
         mensaje.setText(contenido);
         mailSender.send(mensaje);
     }
+    */
 }
