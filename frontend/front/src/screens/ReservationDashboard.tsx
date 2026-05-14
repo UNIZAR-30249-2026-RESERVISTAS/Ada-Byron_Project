@@ -40,29 +40,7 @@ const estadoColors: Record<string, string> = {
 };
 
 const ITEMS_PER_PAGE = 10;
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL; 
-
-{/*
-function UserAvatar({ name, role }: { name: string; role: string }) {
-    const initials = name
-        .split(' ')
-        .slice(0, 2)
-        .map(n => n[0])
-        .join('');
-
-    // Usamos el primer rol para determinar el color del avatar
-    const displayRole = role.split(',')[0].trim();
-
-    return (
-        <div
-            className="size-8 rounded-full flex items-center justify-center text-white flex-shrink-0"
-            style={{ backgroundColor: roleColors[displayRole] || '#8A8F9E', fontSize: '11px', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}
-        >
-            {initials}
-        </div>
-    );
-}
-*/}
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export function ReservationDashboard() {
     const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -74,6 +52,7 @@ export function ReservationDashboard() {
     const [nombres, setNombres] = useState<Record<string, string>>({});
     const currentUser = getCurrentUser();
     const puedeRevalidar = !!currentUser && isGerente(currentUser);
+    const [mostrarPopUp, setMostrarPopUp] = useState(false);
 
     // Función para cargar los usuarios
     const fetchUsers = async () => {
@@ -104,8 +83,8 @@ export function ReservationDashboard() {
         const res = await fetch(
             `${API_URL}/api/reservas/${reservaId}/revalidar?gerenteId=${currentUser.id}`,
             {
-            method: 'PUT',
-            credentials: 'include',
+                method: 'PUT',
+                credentials: 'include',
             }
         );
 
@@ -115,6 +94,8 @@ export function ReservationDashboard() {
             return;
         }
 
+        setMostrarPopUp(true);
+        setTimeout(() => setMostrarPopUp(false), 4000);
         // Actualiza estado en UI
         setReservations(prev =>
             prev.map(r => (r.id === reservaId ? { ...r, estado: 'CONFIRMADA' } : r))
@@ -161,14 +142,14 @@ export function ReservationDashboard() {
     };
 
     useEffect(() => {
-            // Recorremos la1 lista de usuarios que acabamos de descargar
-            reservations.forEach(r => {
-                // Para evitar llamadas infinitas o repetidas, comprobamos si ya lo hemos buscado
-                if (nombres[r.reservadaPorId] === undefined) {
-                    buscarNombreUsuario(r.reservadaPorId);
-                }
-            });
-        }, [reservations]);
+        // Recorremos la1 lista de usuarios que acabamos de descargar
+        reservations.forEach(r => {
+            // Para evitar llamadas infinitas o repetidas, comprobamos si ya lo hemos buscado
+            if (nombres[r.reservadaPorId] === undefined) {
+                buscarNombreUsuario(r.reservadaPorId);
+            }
+        });
+    }, [reservations]);
 
     const filteredReservations = useMemo(() => {
         return reservations
@@ -391,7 +372,7 @@ export function ReservationDashboard() {
                                                     >
                                                         <Check className="size-4" style={{ color: '#2A9B6F' }} />
                                                     </button>
-                                                    )}
+                                                )}
                                                 <button
                                                     onClick={() => handleDeleteReservation(reservation.id, reservation.reservadaPorId)}
                                                     className="p-2 rounded-lg transition-all"
@@ -423,6 +404,14 @@ export function ReservationDashboard() {
                             <p style={{ fontSize: '14px', color: '#8A8F9E' }}>
                                 No se encontraron reservas
                             </p>
+                        </div>
+                    )}
+
+                    {mostrarPopUp && (
+                        <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[9999] animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="bg-[#1B2A4A] text-white px-8 py-4 rounded-full shadow-2xl flex items-center space-x-3 border-2 border-[#1B2A4A] whitespace-nowrap">
+                                <span className="font-bold">CONFIRMADA</span>
+                            </div>
                         </div>
                     )}
 
