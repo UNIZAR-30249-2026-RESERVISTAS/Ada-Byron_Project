@@ -10,6 +10,17 @@ import com.adabyron.domain.espacio.EspacioFactory;
 import com.adabyron.domain.espacio.EspacioId;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.adabyron.application.espacio.*;
+import com.adabyron.domain.espacio.HorarioDisponible;
+
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -131,6 +142,153 @@ public class EspacioControllerTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto))
+        ).andExpect(status().isOk());
+    }
+
+    @Test
+    void obtenerHorario_Retorna200() throws Exception {
+
+        HorarioDTO horarioDTO = new HorarioDTO(
+                LocalTime.of(8, 0),
+                LocalTime.of(21, 0),
+                true
+        );
+
+        when(rabbitTemplate.convertSendAndReceive(
+                "espacio.obtenerHorario",
+                id.toString()
+        )).thenReturn(horarioDTO);
+
+        mockMvc.perform(get("/api/espacios/" + id + "/horario"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void cambiarHorario_Retorna200() throws Exception {
+
+        UUID gerenteId = UUID.randomUUID();
+
+        CambiarHorarioDTO dto = new CambiarHorarioDTO(
+                LocalTime.of(9, 0),
+                LocalTime.of(20, 0)
+        );
+
+        when(rabbitTemplate.convertSendAndReceive(
+                any(String.class),
+                any(CambiarHorarioCommand.class)
+        )).thenReturn(EspacioDTO.fromEntity(espacio));
+
+        mockMvc.perform(
+                put("/api/espacios/" + id + "/horario")
+                        .with(csrf())
+                        .param("gerenteId", gerenteId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+        ).andExpect(status().isOk());
+    }
+
+    @Test
+    void restablecerHorario_Retorna200() throws Exception {
+
+        UUID gerenteId = UUID.randomUUID();
+
+        when(rabbitTemplate.convertSendAndReceive(
+                any(String.class),
+                any(RestablecerHorarioCommand.class)
+        )).thenReturn(EspacioDTO.fromEntity(espacio));
+
+        mockMvc.perform(
+                delete("/api/espacios/" + id + "/horario")
+                        .with(csrf())
+                        .param("gerenteId", gerenteId.toString())
+        ).andExpect(status().isOk());
+    }
+
+    @Test
+    void obtenerAsignacion_Retorna200() throws Exception {
+
+        AsignacionDTO dto = new AsignacionDTO(
+                "EINA",
+                null,
+                null
+        );
+
+        when(rabbitTemplate.convertSendAndReceive(
+                "espacio.obtenerAsignacion",
+                id.toString()
+        )).thenReturn(dto);
+
+        mockMvc.perform(get("/api/espacios/" + id + "/asignacion"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void asignarAEina_Retorna200() throws Exception {
+
+        when(rabbitTemplate.convertSendAndReceive(
+                "espacio.asignarAEina",
+                id.toString()
+        )).thenReturn(EspacioDTO.fromEntity(espacio));
+
+        mockMvc.perform(
+                put("/api/espacios/" + id + "/asignacion/eina")
+                        .with(csrf())
+        ).andExpect(status().isOk());
+    }
+
+    @Test
+    void asignarADepartamento_Retorna200() throws Exception {
+
+        AsignarDepartamentoDTO dto =
+                new AsignarDepartamentoDTO(1);
+
+        when(rabbitTemplate.convertSendAndReceive(
+                any(String.class),
+                any(AsignarADepartamentoCommand.class)
+        )).thenReturn(EspacioDTO.fromEntity(espacio));
+
+        mockMvc.perform(
+                put("/api/espacios/" + id + "/asignacion/departamento")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+        ).andExpect(status().isOk());
+    }
+
+    @Test
+    void asignarAPersonas_Retorna200() throws Exception {
+
+        UUID personaId = UUID.randomUUID();
+
+        AsignarPersonasDTO dto =
+                new AsignarPersonasDTO(Set.of(personaId));
+
+        when(rabbitTemplate.convertSendAndReceive(
+                any(String.class),
+                any(AsignarAPersonasCommand.class)
+        )).thenReturn(EspacioDTO.fromEntity(espacio));
+
+        mockMvc.perform(
+                put("/api/espacios/" + id + "/asignacion/personas")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+        ).andExpect(status().isOk());
+    }
+
+    @Test
+    void filtrarPorAforo_Retorna200() throws Exception {
+
+        List<String> ids = List.of("001", "002");
+
+        when(rabbitTemplate.convertSendAndReceive(
+                "espacio.filtrarPorAforo",
+                20
+        )).thenReturn(ids);
+
+        mockMvc.perform(
+                get("/api/espacios/filtrarPorAforo")
+                        .param("personas", "20")
         ).andExpect(status().isOk());
     }
 }
