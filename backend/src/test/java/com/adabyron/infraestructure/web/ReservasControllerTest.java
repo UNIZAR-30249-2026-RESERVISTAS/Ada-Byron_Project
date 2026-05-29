@@ -94,12 +94,21 @@ public class ReservasControllerTest {
     //GET /api/reservas/{id} - Buscar reserva por Id
     @Test
     void buscarPorId_Retorna200_SiExiste() throws Exception {
-        when(rabbitTemplate.convertSendAndReceive(eq("reserva.buscar.porId"), eq(id1)))
-                .thenReturn(ReservaDTO.fromEntity(reserva1));
+
+        when(rabbitTemplate.convertSendAndReceive(
+                eq("reserva.buscar.porId"),
+                any(UUID.class)
+        )).thenReturn(ReservaDTO.fromEntity(reserva1));
 
         mockMvc.perform(get("/api/reservas/" + id1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id1.toString()));
+
+        verify(rabbitTemplate, times(1))
+                .convertSendAndReceive(
+                        eq("reserva.buscar.porId"),
+                        any(UUID.class)
+                );
     }
 
     @Test
